@@ -1,0 +1,32 @@
+/code-gallery
+
+# Hidden files
+.*
+
+# Build files
+build
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Backup files
+*~
+*.swp
+_*
+
+# Results files
+*.vtk
+*.vtu
+*.ptvu
+*.pvd
+
+# Graphics
+*.pdf
+*.eps
+*.png
+*.jpg
+
+# Movies
+*.avi
+*.mp4
