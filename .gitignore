@@ -1,4 +1,5 @@
 /code-gallery
+/examples
 
 # Hidden files
 .*
@@ -20,6 +21,7 @@ _*
 *.vtu
 *.ptvu
 *.pvd
+log*
 
 # Graphics
 *.pdf

@@ -1,6 +1,6 @@
 colorscheme ron
 set hlsearch
-set ts=4 sw=4 sts=4 et ai
+set ts=2 sw=2 sts=2 et ai
 filetype plugin on
 
 "- Use the UTF-8 encoding
@@ -14,7 +14,7 @@ autocmd BufReadPost *
     \ endif
 
 "- Highlight long lines
-autocmd FileType python,c,cpp,sh set colorcolumn=100
+autocmd FileType python,c,cpp,sh set colorcolumn=80
 
 "- Turn off autoindent
 autocmd FileType * setlocal formatoptions-=c formatoptions-=r formatoptions-=o
