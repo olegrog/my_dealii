@@ -59,6 +59,7 @@ namespace ThermalDebinding
     void assemble_system();
     void solve_time_step();
     void output_results() const;
+    void make_mesh();
     void refine_mesh();
 
     // A collection of the parameters used to describe the problem setup
@@ -267,6 +268,36 @@ namespace ThermalDebinding
   }
 
 
+  template <int dim>
+  void Solver<dim>::make_mesh()
+  {
+    GridGenerator::hyper_cube(triangulation, 0, problem.size);
+    triangulation.refine_global(params.mr.j_min);
+    const double small = 1e-16 * problem.size;
+
+    for (unsigned int step = 0; step < params.mr.j_max - params.mr.j_min;
+         ++step)
+      {
+        for (auto &cell : triangulation.active_cell_iterators())
+          {
+            RefinementCase<dim> rf = RefinementCase<dim>::no_refinement;
+            for (const auto face_no : cell->face_indices())
+              {
+                const auto &face = cell->face(face_no);
+                if (face->at_boundary())
+                  for (int i = 0; i < dim; ++i)
+                    if (std::fabs(cell->center()[i] - face->center()[i]) >
+                        small)
+                      rf = rf | RefinementCase<dim>::cut_axis(i);
+              }
+            cell->set_refine_flag(rf);
+          }
+
+        triangulation.execute_coarsening_and_refinement();
+      }
+  }
+
+
 
   template <int dim>
   void Solver<dim>::refine_mesh()
@@ -312,10 +343,9 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::run()
   {
-    GridGenerator::hyper_cube(triangulation, 0, problem.size);
-    triangulation.refine_global(params.mr.j_min);
-
+    make_mesh();
     setup_system();
+    output_results();
 
     Vector<double> tmp;
     Vector<double> forcing_terms;
@@ -328,8 +358,6 @@ namespace ThermalDebinding
                              Functions::ZeroFunction<dim>(),
                              old_solution);
     solution = old_solution;
-
-    output_results();
 
     while (time.loop())
       {
