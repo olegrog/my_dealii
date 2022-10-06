@@ -6,8 +6,11 @@
 SET(TARGET "ThermalDebinding")
 
 SET(TARGET_SRC
-  ${TARGET}.cc
+  ${TARGET}.cc Parameters.cc
   )
+
+# Define the output that should be cleaned:
+SET(CLEAN_UP_FILES *.vtk)
 
 # Usually, you will not need to modify anything beyond this point...
 
