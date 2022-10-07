@@ -31,6 +31,7 @@ namespace ThermalDebinding
     Time::declare_parameters(prm);
     FiniteElements::declare_parameters(prm);
     MeshRefinement::declare_parameters(prm);
+    LinearSolver::declare_parameters(prm);
     NonlinearSolver::declare_parameters(prm);
     Output::declare_parameters(prm);
   }
@@ -42,6 +43,7 @@ namespace ThermalDebinding
     time.parse_parameters(prm);
     fe.parse_parameters(prm);
     mr.parse_parameters(prm);
+    ls.parse_parameters(prm);
     ns.parse_parameters(prm);
     output.parse_parameters(prm);
   }
@@ -151,6 +153,7 @@ namespace ThermalDebinding
     {
       prm.declare_entry("End time", "500e3", Patterns::Double(1e-100));
       prm.declare_entry("Step size", "1e3", Patterns::Double(1e-100));
+      prm.declare_entry("Theta", "1", Patterns::Double(0,1));
     }
     prm.leave_subsection();
   }
@@ -161,6 +164,7 @@ namespace ThermalDebinding
     {
       end_   = prm.get_double("End time");
       delta_ = prm.get_double("Step size");
+      theta_ = prm.get_double("Theta");
     }
 
     prm.leave_subsection();
@@ -212,6 +216,28 @@ namespace ThermalDebinding
       n_steps = prm.get_integer("Number of time steps");
       upper   = prm.get_double("Refining threshold");
       lower   = prm.get_double("Coarsening threshold");
+    }
+    prm.leave_subsection();
+  }
+
+
+
+  void LinearSolver::declare_parameters(ParameterHandler &prm)
+  {
+    prm.enter_subsection("Linear solver");
+    {
+      prm.declare_entry("Max iterations", "15", Patterns::Integer(0));
+      prm.declare_entry("Tolerance", "1e-8", Patterns::Double(0.0));
+    }
+    prm.leave_subsection();
+  }
+
+  void LinearSolver::parse_parameters(ParameterHandler &prm)
+  {
+    prm.enter_subsection("Linear solver");
+    {
+      max_iter = prm.get_integer("Max iterations");
+      tol      = prm.get_double("Tolerance");
     }
     prm.leave_subsection();
   }

@@ -165,6 +165,10 @@ namespace ThermalDebinding
     {
       return delta_;
     }
+    double theta() const
+    {
+      return theta_;
+    }
     unsigned int step() const
     {
       return step_;
@@ -185,6 +189,7 @@ namespace ThermalDebinding
     double       current_;
     double       end_;
     double       delta_;
+    double       theta_;
   };
 
   struct FiniteElements
@@ -204,6 +209,16 @@ namespace ThermalDebinding
     unsigned int n_steps;
     double       upper;
     double       lower;
+
+    static void declare_parameters(ParameterHandler &prm);
+
+    void parse_parameters(ParameterHandler &prm);
+  };
+
+  struct LinearSolver
+  {
+    unsigned int max_iter;
+    double       tol;
 
     static void declare_parameters(ParameterHandler &prm);
 
@@ -237,6 +252,7 @@ namespace ThermalDebinding
     Time            time;
     FiniteElements  fe;
     MeshRefinement  mr;
+    LinearSolver    ls;
     NonlinearSolver ns;
     Output          output;
 

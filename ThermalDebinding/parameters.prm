@@ -35,6 +35,7 @@ end
 subsection Time
   set End time                    = 500e3     # [s]
   set Step size                   = 1e3       # [s]
+  set Theta                       = 1
 end
 
 subsection Finite elements
@@ -45,9 +46,14 @@ end
 subsection Mesh refinement
   set Minimum level               = 4
   set Maximum level               = 8
-  set Number of time steps        = 5
-  set Refining threshold          = 1
+  set Number of time steps        = 1
+  set Refining threshold          = 0
   set Coarsening threshold        = 0
+end
+
+subsection Linear solver
+  set Max iterations              = 1000
+  set Tolerance                   = 1e-8
 end
 
 subsection Nonlinear solver
