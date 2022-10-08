@@ -7,7 +7,7 @@ Installation
 -------
 The repository can be cloned by
 ```
-    git clone https://github.com/olegrog/dealii.git
+    git clone https://github.com/olegrog/my_dealii.git
 ```
 To build an augmented Docker image, run
 ```

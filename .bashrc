@@ -32,7 +32,7 @@ export LESS=" -R"
 # Find files in the deal.II distribution and among the local source code
 _find_dealii_files() {
     local res1 res2
-    res1="$(locate "/$1" | grep "/usr/local")"
+    res1="$(locate "/$1" | grep "/usr/src/dealii")"
     res2="$(find ~ -wholename "*/$1*")"
     if [[ -z "$res1$res2" ]]; then
         echo -e "${RED}Missing filename!${NC}" >&2
