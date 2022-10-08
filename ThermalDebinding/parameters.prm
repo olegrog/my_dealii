@@ -35,25 +35,28 @@ end
 subsection Time
   set End time                    = 500e3     # [s]
   set Step size                   = 1e3       # [s]
-  set Theta                       = 1
+  set Theta                       = 0.5
 end
 
 subsection Finite elements
-  set Polynomial degree           = 2
-  set Quadrature order            = 3
+  set Polynomial degree           = 1
+  set Quadrature order            = 2
 end
 
 subsection Mesh refinement
   set Minimum level               = 4
   set Maximum level               = 8
   set Number of time steps        = 1
-  set Refining threshold          = 0
-  set Coarsening threshold        = 0
+  set Refining threshold          = 0.5
+  set Coarsening threshold        = 0.1
+  set Maximum number of cells     = 5000
 end
 
 subsection Linear solver
   set Max iterations              = 1000
   set Tolerance                   = 1e-8
+  set Reduce                      = 1e-2
+  set Preconditioner relaxation   = 1.0
 end
 
 subsection Nonlinear solver
@@ -64,5 +67,6 @@ end
 subsection Output
   set Write VTK files             = true
   set Number of time steps        = 1
+  set Log verbosity               = 0
 end
 

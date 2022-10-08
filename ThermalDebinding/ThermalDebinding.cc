@@ -61,7 +61,7 @@ namespace ThermalDebinding
     double solve_ls();
     void   output_results() const;
     void   make_mesh();
-    void   refine_mesh();
+    bool   refine_mesh();
 
     // A collection of the parameters used to describe the problem setup
     Parameters &       params;
@@ -237,17 +237,16 @@ namespace ThermalDebinding
   template <int dim>
   double Solver<dim>::solve_ls()
   {
-    SolverControl solver_control(params.ls.max_iter,
-                                 params.ls.tol * system_rhs.l2_norm());
+    ReductionControl solver_control(params.ls.max_iter,
+                                    params.ls.tol * system_rhs.l2_norm(),
+                                    params.ls.reduce);
 
     SolverCG<Vector<double>> cg(solver_control);
 
     PreconditionSSOR<SparseMatrix<double>> preconditioner;
-    preconditioner.initialize(system_matrix, 1.0);
+    preconditioner.initialize(system_matrix, params.ls.preconditioner_relax);
 
     cg.solve(system_matrix, solution, system_rhs, preconditioner);
-
-    constraints.distribute(solution);
 
     std::cout << "     " << solver_control.last_step()
               << " CG iterations: initial residual = "
@@ -313,7 +312,7 @@ namespace ThermalDebinding
 
 
   template <int dim>
-  void Solver<dim>::refine_mesh()
+  bool Solver<dim>::refine_mesh()
   {
     Vector<float> estimated_error_per_cell(triangulation.n_active_cells());
 
@@ -327,7 +326,8 @@ namespace ThermalDebinding
     GridRefinement::refine_and_coarsen_fixed_fraction(triangulation,
                                                       estimated_error_per_cell,
                                                       params.mr.upper,
-                                                      params.mr.lower);
+                                                      params.mr.lower,
+                                                      params.mr.max_n_cells);
 
     if (triangulation.n_levels() > params.mr.j_max)
       for (const auto &cell :
@@ -337,31 +337,20 @@ namespace ThermalDebinding
          triangulation.active_cell_iterators_on_level(params.mr.j_min))
       cell->clear_coarsen_flag();
 
-    std::vector<Vector<double>> transfer_in;
-    std::vector<Vector<double>> transfer_out;
-    transfer_in.push_back(solution);
-    transfer_in.push_back(rhs);
+    bool is_changed = triangulation.prepare_coarsening_and_refinement();
 
-    triangulation.prepare_coarsening_and_refinement();
-    SolutionTransfer<dim> solution_trans(dof_handler);
-    solution_trans.prepare_for_coarsening_and_refinement(transfer_in);
-    triangulation.execute_coarsening_and_refinement();
+    if (is_changed)
+      {
+        Vector<double>        previous_solution = solution;
+        SolutionTransfer<dim> solution_trans(dof_handler);
+        solution_trans.prepare_for_coarsening_and_refinement(previous_solution);
+        triangulation.execute_coarsening_and_refinement();
+        setup_system();
+        solution_trans.interpolate(previous_solution, solution);
+        constraints.distribute(solution);
+      }
 
-    setup_system();
-
-    {
-      transfer_out.push_back(Vector<double>());
-      transfer_out.push_back(Vector<double>());
-      transfer_out[0].reinit(dof_handler.n_dofs());
-      transfer_out[1].reinit(dof_handler.n_dofs());
-    }
-
-    solution_trans.interpolate(transfer_in, transfer_out);
-    solution = transfer_out[0];
-    rhs      = transfer_out[1];
-
-    constraints.distribute(solution);
-    constraints.distribute(rhs);
+    return is_changed;
   }
 
 
@@ -432,29 +421,38 @@ namespace ThermalDebinding
           }
         while (solve_ls() > params.ns.tol && ++i < params.ns.max_iter);
 
+        constraints.distribute(solution);
         output_results();
         std::cout << "y = " << material.y(time()) << " T = " << T
                   << " max(p) = " << max_pressure << std::endl;
 
         if (time.step() % params.mr.n_steps == 0)
           {
-            refine_mesh();
-            tmp.reinit(solution.size());
-            forcing_terms.reinit(solution.size());
+            if (refine_mesh())
+              {
+                tmp.reinit(solution.size());
+                forcing_terms.reinit(solution.size());
+                assemble_rhs();
+              }
           }
       }
   }
 } // namespace ThermalDebinding
 
 
-int main()
+
+int main(int argc, char *argv[])
 {
   try
     {
       using namespace ThermalDebinding;
 
-      Parameters parameters("parameters.prm");
-      Solver<2>  solver(parameters);
+      std::string prm_file = argc > 1 ? argv[1] : "parameters.prm";
+      Parameters  parameters(prm_file);
+
+      deallog.depth_console(parameters.output.verbosity);
+
+      Solver<2> solver(parameters);
       solver.run();
     }
   catch (std::exception &exc)

@@ -209,6 +209,7 @@ namespace ThermalDebinding
     unsigned int n_steps;
     double       upper;
     double       lower;
+    double       max_n_cells;
 
     static void declare_parameters(ParameterHandler &prm);
 
@@ -219,6 +220,8 @@ namespace ThermalDebinding
   {
     unsigned int max_iter;
     double       tol;
+    double       reduce;
+    double       preconditioner_relax;
 
     static void declare_parameters(ParameterHandler &prm);
 
@@ -239,6 +242,7 @@ namespace ThermalDebinding
   {
     bool         write_vtk_files;
     unsigned int n_steps;
+    unsigned int verbosity;
 
     static void declare_parameters(ParameterHandler &prm);
 

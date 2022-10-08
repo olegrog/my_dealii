@@ -153,7 +153,7 @@ namespace ThermalDebinding
     {
       prm.declare_entry("End time", "500e3", Patterns::Double(1e-100));
       prm.declare_entry("Step size", "1e3", Patterns::Double(1e-100));
-      prm.declare_entry("Theta", "1", Patterns::Double(0,1));
+      prm.declare_entry("Theta", "1", Patterns::Double(0, 1));
     }
     prm.leave_subsection();
   }
@@ -203,6 +203,9 @@ namespace ThermalDebinding
       prm.declare_entry("Number of time steps", "3", Patterns::Integer(1));
       prm.declare_entry("Refining threshold", "1", Patterns::Double(0, 1));
       prm.declare_entry("Coarsening threshold", "0", Patterns::Double(0, 1));
+      prm.declare_entry("Maximum number of cells",
+                        "1000",
+                        Patterns::Integer(1));
     }
     prm.leave_subsection();
   }
@@ -211,11 +214,12 @@ namespace ThermalDebinding
   {
     prm.enter_subsection("Mesh refinement");
     {
-      j_min   = prm.get_integer("Minimum level");
-      j_max   = prm.get_integer("Maximum level");
-      n_steps = prm.get_integer("Number of time steps");
-      upper   = prm.get_double("Refining threshold");
-      lower   = prm.get_double("Coarsening threshold");
+      j_min       = prm.get_integer("Minimum level");
+      j_max       = prm.get_integer("Maximum level");
+      n_steps     = prm.get_integer("Number of time steps");
+      upper       = prm.get_double("Refining threshold");
+      lower       = prm.get_double("Coarsening threshold");
+      max_n_cells = prm.get_double("Maximum number of cells");
     }
     prm.leave_subsection();
   }
@@ -227,7 +231,11 @@ namespace ThermalDebinding
     prm.enter_subsection("Linear solver");
     {
       prm.declare_entry("Max iterations", "15", Patterns::Integer(0));
-      prm.declare_entry("Tolerance", "1e-8", Patterns::Double(0.0));
+      prm.declare_entry("Tolerance", "1e-8", Patterns::Double(0, 1));
+      prm.declare_entry("Reduce", "1e-2", Patterns::Double(0, 1));
+      prm.declare_entry("Preconditioner relaxation",
+                        "1",
+                        Patterns::Double(0, 2));
     }
     prm.leave_subsection();
   }
@@ -236,8 +244,10 @@ namespace ThermalDebinding
   {
     prm.enter_subsection("Linear solver");
     {
-      max_iter = prm.get_integer("Max iterations");
-      tol      = prm.get_double("Tolerance");
+      max_iter             = prm.get_integer("Max iterations");
+      tol                  = prm.get_double("Tolerance");
+      reduce               = prm.get_double("Reduce");
+      preconditioner_relax = prm.get_double("Preconditioner relaxation");
     }
     prm.leave_subsection();
   }
@@ -271,7 +281,8 @@ namespace ThermalDebinding
     prm.enter_subsection("Output");
     {
       prm.declare_entry("Write VTK files", "true", Patterns::Bool());
-      prm.declare_entry("Number of time steps", "5", Patterns::Integer(0));
+      prm.declare_entry("Number of time steps", "1", Patterns::Integer(0));
+      prm.declare_entry("Log verbosity", "0", Patterns::Integer(0));
     }
     prm.leave_subsection();
   }
@@ -282,6 +293,7 @@ namespace ThermalDebinding
     {
       write_vtk_files = prm.get_bool("Write VTK files");
       n_steps         = prm.get_integer("Number of time steps");
+      verbosity       = prm.get_integer("Log verbosity");
     }
     prm.leave_subsection();
   }
