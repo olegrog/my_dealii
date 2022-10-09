@@ -19,7 +19,6 @@ subsection Material
   set Particle size exponent      = 2
 
   subsection Polymer composition
-    set Number of components      = 1
     subsection Polymer1
       set Initial mass fraction   = 1
       set Degradation rate        = 1e-5      # [1/s]

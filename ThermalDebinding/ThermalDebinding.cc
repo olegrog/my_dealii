@@ -447,8 +447,8 @@ int main(int argc, char *argv[])
     {
       using namespace ThermalDebinding;
 
-      std::string prm_file = argc > 1 ? argv[1] : "parameters.prm";
-      Parameters  parameters(prm_file);
+      const std::string prm_file = argc > 1 ? argv[1] : "parameters.prm";
+      Parameters        parameters(prm_file);
 
       deallog.depth_console(parameters.output.verbosity);
 

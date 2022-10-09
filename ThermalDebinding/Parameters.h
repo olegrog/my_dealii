@@ -12,28 +12,25 @@
  * ---------------------------------------------------------------------
  */
 
-#include <deal.II/base/parameter_handler.h>
+#include <deal.II/base/parameter_acceptor.h>
 
 namespace ThermalDebinding
 {
   using namespace dealii;
 
-  struct Problem
+  struct Problem : ParameterAcceptor
   {
+    Problem();
+
     double size;
     double T0;
     double heating_rate;
-
-    static void declare_parameters(ParameterHandler &prm);
-
-    void parse_parameters(ParameterHandler &prm);
   };
 
-  class Material
+  class Material : ParameterAcceptor
   {
   public:
-    void        parse_parameters(ParameterHandler &prm);
-    static void declare_parameters(ParameterHandler &prm);
+    Material();
 
     //- Return the polymer concentration w.r.t. the initial one
     double y(double time) const
@@ -140,44 +137,49 @@ namespace ThermalDebinding
     double particleSizeExponent_;
   };
 
-  class Time
+  class Time : ParameterAcceptor
   {
   public:
-    Time()
-      : step_(0)
-      , current_(0.0)
-    {}
+    Time();
 
-    static void declare_parameters(ParameterHandler &prm);
-
-    void parse_parameters(ParameterHandler &prm);
-
-
+    //- Return the current time
     double operator()() const
     {
       return current_;
     }
+
+    //- Return the end time
     double end() const
     {
       return end_;
     }
+
+    //- Return the time step size
     double delta() const
     {
       return delta_;
     }
+
+    //- Return parameter of the time-marching scheme
     double theta() const
     {
       return theta_;
     }
+
+    //- Return the current iteration number
     unsigned int step() const
     {
       return step_;
     }
+
+    //- Increment the time
     void operator++()
     {
       current_ += delta_;
       ++step_;
     }
+
+    //- Increment the time and check if the end time is reached
     bool loop()
     {
       operator++();
@@ -192,61 +194,51 @@ namespace ThermalDebinding
     double       theta_;
   };
 
-  struct FiniteElements
+  struct FiniteElements : ParameterAcceptor
   {
+    FiniteElements();
+
     unsigned int poly_degree;
     unsigned int quad_order;
-
-    static void declare_parameters(ParameterHandler &prm);
-
-    void parse_parameters(ParameterHandler &prm);
   };
 
-  struct MeshRefinement
+  struct MeshRefinement : ParameterAcceptor
   {
+    MeshRefinement();
+
     unsigned int j_min;
     unsigned int j_max;
     unsigned int n_steps;
     double       upper;
     double       lower;
     double       max_n_cells;
-
-    static void declare_parameters(ParameterHandler &prm);
-
-    void parse_parameters(ParameterHandler &prm);
   };
 
-  struct LinearSolver
+  struct LinearSolver : ParameterAcceptor
   {
+    LinearSolver();
+
     unsigned int max_iter;
     double       tol;
     double       reduce;
     double       preconditioner_relax;
-
-    static void declare_parameters(ParameterHandler &prm);
-
-    void parse_parameters(ParameterHandler &prm);
   };
 
-  struct NonlinearSolver
+  struct NonlinearSolver : ParameterAcceptor
   {
+    NonlinearSolver();
+
     unsigned int max_iter;
     double       tol;
-
-    static void declare_parameters(ParameterHandler &prm);
-
-    void parse_parameters(ParameterHandler &prm);
   };
 
-  struct Output
+  struct Output : ParameterAcceptor
   {
+    Output();
+
     bool         write_vtk_files;
     unsigned int n_steps;
     unsigned int verbosity;
-
-    static void declare_parameters(ParameterHandler &prm);
-
-    void parse_parameters(ParameterHandler &prm);
   };
 
   struct Parameters
@@ -261,8 +253,6 @@ namespace ThermalDebinding
     Output          output;
 
     Parameters(const std::string &input_file);
-    static void declare_parameters(ParameterHandler &prm);
-    void        parse_parameters(ParameterHandler &prm);
   };
 
 } // namespace ThermalDebinding
