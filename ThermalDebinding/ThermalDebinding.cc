@@ -41,6 +41,7 @@
 #include <iostream>
 
 #include "Parameters.h"
+#include "PostProcess.h"
 
 namespace ThermalDebinding
 {
@@ -58,6 +59,7 @@ namespace ThermalDebinding
     void   setup_system();
     void   assemble_rhs();
     void   assemble_matrix();
+    double get_maximal_pressure() const;
     double solve_ls();
     void   output_results() const;
     void   make_mesh();
@@ -84,8 +86,7 @@ namespace ThermalDebinding
     Vector<double> rhs;
     Vector<double> system_rhs;
 
-    double T;            // current temperature [K]
-    double max_pressure; // maximum pressure in the domain [Pa]
+    double T; // current temperature [K]
   };
 
 
@@ -185,36 +186,32 @@ namespace ThermalDebinding
   {
     const QGauss<dim> quadrature_formula(params.fe.quad_order);
 
-    matrix       = 0;
-    max_pressure = 0;
+    matrix = 0;
 
     FEValues<dim> fe_values(fe,
                             quadrature_formula,
-                            update_gradients | update_quadrature_points |
-                              update_JxW_values);
+                            update_values | update_gradients |
+                              update_quadrature_points | update_JxW_values);
 
     const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
     const unsigned int n_q_points    = quadrature_formula.size();
 
-    FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
+    FullMatrix<double>  cell_matrix(dofs_per_cell, dofs_per_cell);
+    std::vector<double> solution_values(n_q_points);
 
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
-
-    const double K = material.K(time());
-    const double D2byP =
-      K / material.mu() / material.poreVolumeFraction(time());
 
     for (const auto &cell : dof_handler.active_cell_iterators())
       {
         cell_matrix = 0;
         fe_values.reinit(cell);
+        fe_values.get_function_values(solution, solution_values);
+
         for (unsigned int q = 0; q < n_q_points; ++q)
           {
-            const double D1 = material.D(T);
-            const double P  = material.P(time(), solution[q], T);
-            const double D2 = D2byP * P;
-            if (P > max_pressure)
-              max_pressure = P;
+            const double D1 = material.D1(T);
+            const double P  = material.P(time(), solution_values[q], T);
+            const double D2 = material.D2(time(), P);
 
             for (unsigned int i = 0; i < dofs_per_cell; ++i)
               for (unsigned int j = 0; j < dofs_per_cell; ++j)
@@ -230,6 +227,36 @@ namespace ThermalDebinding
                        local_dof_indices[j],
                        cell_matrix(i, j));
       }
+  }
+
+
+
+  template <int dim>
+  double Solver<dim>::get_maximal_pressure() const
+  {
+    const QIterated<dim> quadrature_formula(QTrapezoid<1>(),
+                                            params.fe.quad_order);
+    FEValues<dim>        fe_values(fe, quadrature_formula, update_values);
+
+    const unsigned int n_q_points = quadrature_formula.size();
+
+    std::vector<double> solution_values(n_q_points);
+
+    double max_pressure = 0;
+
+    for (const auto &cell : dof_handler.active_cell_iterators())
+      {
+        fe_values.reinit(cell);
+        fe_values.get_function_values(solution, solution_values);
+
+        for (unsigned int q = 0; q < n_q_points; ++q)
+          {
+            const double P = material.P(time(), solution[q], T);
+            max_pressure   = std::max(max_pressure, P);
+          }
+      }
+
+    return max_pressure;
   }
 
 
@@ -263,19 +290,27 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::output_results() const
   {
-    DataOut<dim> data_out;
+    if (!params.output.write_vtk_files)
+      return;
 
-    data_out.attach_dof_handler(dof_handler);
-    data_out.add_data_vector(solution, "rho");
+    if (time.step() % params.output.n_steps == 0)
+      {
+        DataOut<dim>         data_out;
+        ComputePressure<dim> compute_pressure(material, time(), T);
 
-    data_out.build_patches();
+        data_out.attach_dof_handler(dof_handler);
+        data_out.add_data_vector(solution, "density");
+        data_out.add_data_vector(solution, compute_pressure);
 
-    data_out.set_flags(DataOutBase::VtkFlags(time(), time.step()));
+        data_out.build_patches();
 
-    const std::string filename =
-      "solution-" + Utilities::int_to_string(time.step(), 3) + ".vtk";
-    std::ofstream output(filename);
-    data_out.write_vtk(output);
+        data_out.set_flags(DataOutBase::VtkFlags(time(), time.step()));
+
+        const std::string filename =
+          "solution-" + Utilities::int_to_string(time.step(), 3) + ".vtk";
+        std::ofstream output(filename);
+        data_out.write_vtk(output);
+      }
   }
 
 
@@ -424,7 +459,7 @@ namespace ThermalDebinding
         constraints.distribute(solution);
         output_results();
         std::cout << "y = " << material.y(time()) << " T = " << T
-                  << " max(p) = " << max_pressure << std::endl;
+                  << " max(p) = " << get_maximal_pressure() << std::endl;
 
         if (time.step() % params.mr.n_steps == 0)
           {

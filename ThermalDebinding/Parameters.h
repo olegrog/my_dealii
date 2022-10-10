@@ -77,11 +77,17 @@ namespace ThermalDebinding
     }
 
     //- Return the diffusion coefficient [m^2/s]
-    double D(double T) const
+    double D1(double T) const
     {
       const double R = 8.3145; // J/mol/K
       return D0_ * exp(-Ea_ / R / T) *
              std::pow(1 - ceramicVolumeFraction_, 1.5);
+    }
+
+    //- Return the mass diffusivity due to convection [m^2/s]
+    double D2(double time, double P) const
+    {
+      return K(time) / mu() / poreVolumeFraction(time) * P;
     }
 
     //- Return the dynamic viscosity [kg/m/s]
