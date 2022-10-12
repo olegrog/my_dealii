@@ -20,10 +20,9 @@ namespace ThermalDebinding
   class ComputePressure : public DataPostprocessorScalar<dim>
   {
   public:
-    ComputePressure(const Material &material, double time, double T)
+    ComputePressure(const Material &material, double T)
       : DataPostprocessorScalar<dim>("pressure", update_values)
       , material_(material)
-      , time_(time)
       , T_(T)
     {}
 
@@ -32,13 +31,11 @@ namespace ThermalDebinding
       std::vector<Vector<double>> &computed_quantities) const override
     {
       for (unsigned int i = 0; i < computed_quantities.size(); ++i)
-        computed_quantities[i] =
-          material_.P(time_, inputs.solution_values[i], T_);
+        computed_quantities[i] = material_.P(inputs.solution_values[i], T_);
     }
 
   private:
     const Material &material_;
-    const double    time_;
     const double    T_;
   };
 

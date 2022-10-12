@@ -16,65 +16,12 @@
 
 namespace ThermalDebinding
 {
-  Parameters::Parameters(const std::string &input_file)
-  {
-    std::cout << "Reading parameters... " << std::flush;
-    ParameterAcceptor::initialize(input_file);
-    std::cout << "done" << std::endl;
-  }
-
-
-
   Problem::Problem()
     : ParameterAcceptor("Problem")
   {
     add_parameter("Hyper cube size", size = 1e-2);
     add_parameter("Initial temperature", T0 = 300);
     add_parameter("Heating rate", heating_rate = 1.667e-3);
-  }
-
-
-
-  Material::Material()
-    : ParameterAcceptor("Material")
-  {
-    add_parameter("Polymer density", polymerRho_ = 1e3);
-    add_parameter("Monomer molar mass", monomerW_ = 100e-3);
-    add_parameter("Ceramic volume fraction", ceramicVolumeFraction_ = 0.63);
-    add_parameter("Initial porosity", initialPorosity_ = 0.03);
-    add_parameter("Dynamic viscosity", mu_ = 2e-3);
-    add_parameter("Mean particle size", meanParticleSize_ = 1e-7);
-    add_parameter("Particle size exponent", particleSizeExponent_ = 2);
-
-    enter_subsection("Polymer composition");
-    {
-      enter_subsection("Polymer1");
-      {
-        add_parameter("Initial mass fraction", y0_ = 1);
-        add_parameter("Degradation rate", degradationRate_ = 1e-5);
-      }
-      leave_subsection();
-    }
-    leave_subsection();
-
-    enter_subsection("Diffusion");
-    {
-      add_parameter("Pre-exponential factor", D0_ = 6.92e-4);
-      add_parameter("Activation energy", Ea_ = 38.37e3);
-    }
-    leave_subsection();
-  }
-
-
-
-  Time::Time()
-    : ParameterAcceptor("Time")
-    , step_(0)
-    , current_(0.0)
-  {
-    add_parameter("End time", end_ = 500e3);
-    add_parameter("Step size", delta_ = 1e3);
-    add_parameter("Theta", theta_ = 0.5);
   }
 
 

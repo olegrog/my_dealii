@@ -19,10 +19,9 @@ subsection Material
   set Particle size exponent      = 2
 
   subsection Polymer composition
-    subsection Polymer1
-      set Initial mass fraction   = 1
-      set Degradation rate        = 1e-5      # [1/s]
-    end
+    set Initial mass fraction     = 0.2, 0.8
+    set Constant rate             = 17, 15000 # [1/s]
+    set Activation energy         = 4e4, 9e4  # [J/mol]
   end
 
   subsection Diffusion
@@ -32,7 +31,7 @@ subsection Material
 end
 
 subsection Time
-  set End time                    = 500e3     # [s]
+  set End time                    = 200e3     # [s]
   set Step size                   = 1e3       # [s]
   set Theta                       = 0.5
 end

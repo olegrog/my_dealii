@@ -9,17 +9,22 @@ if (ARGC > 0) {
 
 file = "log"
 # Generate 3 columns
-data = sprintf("<(awk '/y =/{print $3, $6, $9}' %s)", file)
+data = sprintf("<(awk '/T =/{print $3, $6, $9, $12}' %s)", file)
 
 set multiplot layout 1, 2
 
-set xlabel "Temperature"
+set xlabel "Temperature (°C)"
+
+KtoC(T) = T - 273.15
+
 #set format y "%g"
 
-set ylabel "Mass fraction"
-plot data u 2:1 w l lw 2 title "polymer"
+set ylabel "Mass fraction of a polymer specie"
+set yrange [0:1]
+plot data u (KtoC($1)):3 w l lw 2 title "Polymer1", '' u (KtoC($1)):4 w l lw 2 title "Polymer2"
 
 set ylabel "Pressure (Pa)"
+unset yrange
 set log y
-plot data u 2:3 w l lw 2 title "maximum monomer pressure"
+plot data u (KtoC($1)):2 w l lw 2 title "Maximum monomer pressure"
 

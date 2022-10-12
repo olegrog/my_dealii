@@ -41,6 +41,8 @@
 #include <iostream>
 
 #include "Parameters.h"
+#include "Material.h"
+#include "Time.h"
 #include "PostProcess.h"
 
 namespace ThermalDebinding
@@ -52,7 +54,7 @@ namespace ThermalDebinding
   class Solver
   {
   public:
-    Solver(Parameters &parameters);
+    Solver(Parameters &parameters, Material &material, Time &time);
     void run();
 
   private:
@@ -65,11 +67,11 @@ namespace ThermalDebinding
     void   make_mesh();
     bool   refine_mesh();
 
-    // A collection of the parameters used to describe the problem setup
-    Parameters &       params;
-    const Problem &    problem;
-    const Material &   material;
-    Time &             time;
+    Parameters &   params;
+    const Problem &problem;
+    Material &     material;
+    Time &         time;
+
     Triangulation<dim> triangulation;
     FE_Q<dim>          fe;
     DoFHandler<dim>    dof_handler;
@@ -92,13 +94,14 @@ namespace ThermalDebinding
 
 
   template <int dim>
-  Solver<dim>::Solver(Parameters &parameters)
+  Solver<dim>::Solver(Parameters &parameters, Material &material, Time &time)
     : params(parameters)
     , problem(params.problem)
-    , material(params.material)
-    , time(params.time)
+    , material(material)
+    , time(time)
     , fe(params.fe.poly_degree)
     , dof_handler(triangulation)
+    , T(problem.T0)
   {}
 
 
@@ -163,7 +166,7 @@ namespace ThermalDebinding
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
 
     const double RHS = -material.initialPolymerFraction() *
-                       material.polymerRho() * material.dydt(time());
+                       material.polymerRho() * material.dydt(T);
 
     for (const auto &cell : dof_handler.active_cell_iterators())
       {
@@ -210,8 +213,8 @@ namespace ThermalDebinding
         for (unsigned int q = 0; q < n_q_points; ++q)
           {
             const double D1 = material.D1(T);
-            const double P  = material.P(time(), solution_values[q], T);
-            const double D2 = material.D2(time(), P);
+            const double P  = material.P(solution_values[q], T);
+            const double D2 = material.D2(P);
 
             for (unsigned int i = 0; i < dofs_per_cell; ++i)
               for (unsigned int j = 0; j < dofs_per_cell; ++j)
@@ -251,7 +254,7 @@ namespace ThermalDebinding
 
         for (unsigned int q = 0; q < n_q_points; ++q)
           {
-            const double P = material.P(time(), solution[q], T);
+            const double P = material.P(solution[q], T);
             max_pressure   = std::max(max_pressure, P);
           }
       }
@@ -296,7 +299,7 @@ namespace ThermalDebinding
     if (time.step() % params.output.n_steps == 0)
       {
         DataOut<dim>         data_out;
-        ComputePressure<dim> compute_pressure(material, time(), T);
+        ComputePressure<dim> compute_pressure(material, T);
 
         data_out.attach_dof_handler(dof_handler);
         data_out.add_data_vector(solution, "density");
@@ -417,6 +420,7 @@ namespace ThermalDebinding
                   << std::endl;
 
         T = problem.T0 + problem.heating_rate * time();
+        material.evolve(T, time.delta());
 
         old_rhs = rhs;
         assemble_rhs();
@@ -458,8 +462,10 @@ namespace ThermalDebinding
 
         constraints.distribute(solution);
         output_results();
-        std::cout << "y = " << material.y(time()) << " T = " << T
-                  << " max(p) = " << get_maximal_pressure() << std::endl;
+        std::cout << "T = " << T << " max(p) = " << get_maximal_pressure();
+        for (unsigned int i = 0; i < material.species().size(); i++)
+          std::cout << " y" << i + 1 << " = " << material.species()[i].y;
+        std::cout << std::endl;
 
         if (time.step() % params.mr.n_steps == 0)
           {
@@ -482,12 +488,18 @@ int main(int argc, char *argv[])
     {
       using namespace ThermalDebinding;
 
+      Parameters parameters;
+      Material   material;
+      Time       time;
+
       const std::string prm_file = argc > 1 ? argv[1] : "parameters.prm";
-      Parameters        parameters(prm_file);
+      std::cout << "Reading parameters... " << std::flush;
+      ParameterAcceptor::initialize(prm_file);
+      std::cout << "done" << std::endl;
 
       deallog.depth_console(parameters.output.verbosity);
 
-      Solver<2> solver(parameters);
+      Solver<2> solver(parameters, material, time);
       solver.run();
     }
   catch (std::exception &exc)
