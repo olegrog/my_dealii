@@ -4,7 +4,7 @@
 
 subsection Problem
   set Hyper cube size             = 1e-2      # [m]
-  set Initial temperature         = 300       # [K]
+  set Initial temperature         = 293       # [K]
   # 1.667e-3 K/s = 6K/hour
   set Heating rate                = 1.667e-3  # [K/s]
 end
@@ -53,17 +53,18 @@ end
 subsection Linear solver
   set Max iterations              = 1000
   set Tolerance                   = 1e-8
-  set Reduce                      = 1e-2
+  set Reduce                      = 0.05
   set Preconditioner relaxation   = 1.0
 end
 
 subsection Nonlinear solver
   set Max iterations              = 15
-  set Tolerance                   = 1e-8
+  set Tolerance                   = 1e-7
 end
 
 subsection Output
   set Write VTK files             = true
+  set Write mesh                  = false
   set Number of time steps        = 1
   set Log verbosity               = 0
 end

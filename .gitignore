@@ -28,6 +28,7 @@ log*
 *.eps
 *.png
 *.jpg
+*.svg
 
 # Movies
 *.avi

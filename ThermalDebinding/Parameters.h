@@ -13,6 +13,7 @@
  */
 
 #include <deal.II/base/parameter_acceptor.h>
+#include <deal.II/grid/grid_out.h>
 
 namespace ThermalDebinding
 {
@@ -69,9 +70,14 @@ namespace ThermalDebinding
   {
     Output();
 
-    bool         write_vtk_files;
-    unsigned int n_steps;
-    unsigned int verbosity;
+    void parse_parameters(ParameterHandler &prm) override;
+
+    bool                  write_vtk_files;
+    bool                  write_mesh;
+    std::string           mesh_format_str;
+    GridOut::OutputFormat mesh_format;
+    unsigned int          n_steps;
+    unsigned int          verbosity;
   };
 
   struct Parameters

@@ -72,8 +72,21 @@ namespace ThermalDebinding
     : ParameterAcceptor("Output")
   {
     add_parameter("Write VTK files", write_vtk_files = true);
+    add_parameter("Write mesh", write_mesh = false);
+    add_parameter("Mesh format",
+                  mesh_format_str = "vtk",
+                  "",
+                  ParameterAcceptor::prm,
+                  Patterns::Selection(GridOut::get_output_format_names()));
     add_parameter("Number of time steps", n_steps = 1);
     add_parameter("Log verbosity", verbosity = 0);
+  }
+
+
+
+  void Output::parse_parameters(ParameterHandler &)
+  {
+    mesh_format = GridOut::parse_output_format(mesh_format_str);
   }
 
 } // namespace ThermalDebinding

@@ -109,6 +109,19 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::setup_system()
   {
+    if (params.output.verbosity > 0)
+      std::cout << " -- Setup a system" << std::endl;
+
+    if (params.output.write_mesh)
+      {
+        std::cout << "Writing the mesh... " << std::flush;
+        std::ofstream out("grid-" + Utilities::int_to_string(time.step(), 3) +
+                          GridOut::default_suffix(params.output.mesh_format));
+        GridOut       grid_out;
+        grid_out.write(triangulation, out, params.output.mesh_format);
+        std::cout << "done" << std::endl;
+      }
+
     dof_handler.distribute_dofs(fe);
 
     std::cout << std::endl
@@ -130,6 +143,17 @@ namespace ThermalDebinding
                                     /*keep_constrained_dofs = */ true);
     sparsity_pattern.copy_from(dsp);
 
+    if (params.output.verbosity > 1)
+      {
+        unsigned int n_nonzero = sparsity_pattern.n_nonzero_elements();
+        std::cout << "Sparsity pattern: n_nonzero = " << n_nonzero << " = "
+                  << std::setprecision(3)
+                  << 100. * n_nonzero / std::pow(dof_handler.n_dofs(), 2)
+                  << "%\n";
+        std::ofstream out("sparsity_pattern.svg");
+        sparsity_pattern.print_svg(out);
+      }
+
     mass_matrix.reinit(sparsity_pattern);
     matrix.reinit(sparsity_pattern);
     system_matrix.reinit(sparsity_pattern);
@@ -149,6 +173,9 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::assemble_rhs()
   {
+    if (params.output.verbosity > 0)
+      std::cout << " -- Assemble the RHS" << std::endl;
+
     const QGauss<dim> quadrature_formula(params.fe.quad_order);
 
     rhs = 0;
@@ -187,6 +214,9 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::assemble_matrix()
   {
+    if (params.output.verbosity > 0)
+      std::cout << " -- Assemble the matrix" << std::endl;
+
     const QGauss<dim> quadrature_formula(params.fe.quad_order);
 
     matrix = 0;
@@ -237,6 +267,9 @@ namespace ThermalDebinding
   template <int dim>
   double Solver<dim>::get_maximal_pressure() const
   {
+    if (params.output.verbosity > 0)
+      std::cout << " -- Find the extreme values" << std::endl;
+
     const QIterated<dim> quadrature_formula(QTrapezoid<1>(),
                                             params.fe.quad_order);
     FEValues<dim>        fe_values(fe, quadrature_formula, update_values);
@@ -267,6 +300,9 @@ namespace ThermalDebinding
   template <int dim>
   double Solver<dim>::solve_ls()
   {
+    if (params.output.verbosity > 0)
+      std::cout << " -- Solve a linear system" << std::endl;
+
     ReductionControl solver_control(params.ls.max_iter,
                                     params.ls.tol * system_rhs.l2_norm(),
                                     params.ls.reduce);
@@ -293,6 +329,9 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::output_results() const
   {
+    if (params.output.verbosity > 0)
+      std::cout << " -- Output the results" << std::endl;
+
     if (!params.output.write_vtk_files)
       return;
 
@@ -321,9 +360,12 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::make_mesh()
   {
+    if (params.output.verbosity > 0)
+      std::cout << " -- Make a mesh" << std::endl;
+
     GridGenerator::hyper_cube(triangulation, 0, problem.size);
     triangulation.refine_global(params.mr.j_min);
-    const double small = 1e-16 * problem.size;
+    const double small = 1e-15 * problem.size;
 
     for (unsigned int step = 0; step < params.mr.j_max - params.mr.j_min;
          ++step)
@@ -352,6 +394,13 @@ namespace ThermalDebinding
   template <int dim>
   bool Solver<dim>::refine_mesh()
   {
+    // Anisotropic refinement does not work in the 3D case
+    if (dim == 3)
+      return false;
+
+    if (params.output.verbosity > 0)
+      std::cout << " -- Refine the mesh" << std::endl;
+
     Vector<float> estimated_error_per_cell(triangulation.n_active_cells());
 
     KellyErrorEstimator<dim>::estimate(
@@ -499,7 +548,7 @@ int main(int argc, char *argv[])
 
       deallog.depth_console(parameters.output.verbosity);
 
-      Solver<2> solver(parameters, material, time);
+      Solver<3> solver(parameters, material, time);
       solver.run();
     }
   catch (std::exception &exc)
