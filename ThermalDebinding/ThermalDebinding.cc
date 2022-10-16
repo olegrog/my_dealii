@@ -61,7 +61,7 @@ namespace ThermalDebinding
     void   setup_system();
     void   assemble_rhs();
     void   assemble_matrix();
-    double get_maximal_pressure() const;
+    void   find_extreme_values() const;
     double solve_ls();
     void   output_results() const;
     void   make_mesh();
@@ -265,7 +265,7 @@ namespace ThermalDebinding
 
 
   template <int dim>
-  double Solver<dim>::get_maximal_pressure() const
+  void Solver<dim>::find_extreme_values() const
   {
     if (params.output.verbosity > 0)
       std::cout << " -- Find the extreme values" << std::endl;
@@ -278,7 +278,12 @@ namespace ThermalDebinding
 
     std::vector<double> solution_values(n_q_points);
 
-    double max_pressure = 0;
+    double maxP   = 0;
+    double maxRho = 0;
+    double minD1  = std::numeric_limits<double>::max();
+    double maxD1  = 0;
+    double minD2  = std::numeric_limits<double>::max();
+    double maxD2  = 0;
 
     for (const auto &cell : dof_handler.active_cell_iterators())
       {
@@ -287,12 +292,22 @@ namespace ThermalDebinding
 
         for (unsigned int q = 0; q < n_q_points; ++q)
           {
-            const double P = material.P(solution[q], T);
-            max_pressure   = std::max(max_pressure, P);
+            const double P  = material.P(solution_values[q], T);
+            const double D1 = material.D1(T);
+            const double D2 = material.D2(P);
+
+            maxP   = std::max(maxP, P);
+            maxRho = std::max(maxRho, solution_values[q]);
+            minD1  = std::min(minD1, D1);
+            maxD1  = std::max(maxD1, D1);
+            minD2  = std::min(minD2, D2);
+            maxD2  = std::max(maxD2, D2);
           }
       }
 
-    return max_pressure;
+    std::cout << "max(P) = " << maxP << " max(Rho) = " << maxRho
+              << " min(D1) = " << minD1 << " max(D1) = " << maxD1
+              << " min(D2) = " << minD2 << " max(D2) = " << maxD2 << std::endl;
   }
 
 
@@ -510,11 +525,15 @@ namespace ThermalDebinding
         while (solve_ls() > params.ns.tol && ++i < params.ns.max_iter);
 
         constraints.distribute(solution);
+
         output_results();
-        std::cout << "T = " << T << " max(p) = " << get_maximal_pressure();
+
+        std::cout << "T = " << T;
         for (unsigned int i = 0; i < material.species().size(); i++)
           std::cout << " y" << i + 1 << " = " << material.species()[i].y;
         std::cout << std::endl;
+
+        find_extreme_values();
 
         if (time.step() % params.mr.n_steps == 0)
           {

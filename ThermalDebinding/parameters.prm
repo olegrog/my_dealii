@@ -65,7 +65,7 @@ end
 subsection Output
   set Write VTK files             = true
   set Write mesh                  = false
-  set Number of time steps        = 1
+  set Number of time steps        = 10
   set Log verbosity               = 0
 end
 
