@@ -152,13 +152,13 @@ namespace ThermalDebinding
 
   double Material::polymerVolumeFraction() const
   {
-    double y = std::accumulate(species_.cbegin(),
-                               species_.cend(),
-                               0,
-                               [](double res, const PolymerSpecie &specie) {
-                                 return res + specie.y;
-                               });
-    return y * initialPolymerFraction();
+    return std::accumulate(species_.cbegin(),
+                           species_.cend(),
+                           0.,
+                           [](double res, const PolymerSpecie &specie) {
+                             return res + specie.y;
+                           }) *
+           initialPolymerFraction();
   }
 
 } // namespace ThermalDebinding
