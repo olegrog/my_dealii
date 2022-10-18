@@ -22,6 +22,7 @@ _*
 *.ptvu
 *.pvd
 log*
+callgrind*
 
 # Graphics
 *.pdf

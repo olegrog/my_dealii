@@ -37,6 +37,8 @@ This conflicts with the requirements."
     )
 ENDIF()
 
+add_compile_options(-g)
+
 DEAL_II_INITIALIZE_CACHED_VARIABLES()
 PROJECT(${TARGET})
 DEAL_II_INVOKE_AUTOPILOT()
