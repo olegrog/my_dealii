@@ -9,7 +9,7 @@ if (ARGC > 0) {
 
 file = "log"
 # Generate 3 columns
-data1 = sprintf("<(awk '/T =/{print $3, $6, $9}' %s)", file)
+data1 = sprintf("<(awk '/T =/{print $3, $6, $9, $12}' %s)", file)
 data2 = sprintf("<(awk '/T =/{T=$3} /max/{print T, $3, $6, $9, $12, $15, $18}' %s)", file)
 
 set multiplot layout 2, 2
@@ -20,8 +20,10 @@ KtoC(T) = T - 273.15
 
 set ylabel "Mass fraction of a polymer specie"
 set yrange [0:1]
-plot data1 u (KtoC($1)):2 w l lw 2 title "Polymer1", \
-  '' u (KtoC($1)):3 w l lw 2 title "Polymer2"
+plot data1 u (KtoC($1)):3 w l lw 2 title "Polymer1", \
+  '' u (KtoC($1)):4 w l lw 2 title "Polymer2", \
+  '' u (KtoC($1)):2 w l lw 2 title "Porosity"
+
 
 set ylabel "Mass diffusivity (m^2/s)"
 set log y

@@ -62,6 +62,12 @@ namespace ThermalDebinding
       return 1 - ceramicVolumeFraction_ - initialPorosity_;
     }
 
+    //- Return the volume fraction of pores
+    double poreVolumeFraction() const
+    {
+      return 1 - ceramicVolumeFraction_ - polymerVolumeFraction();
+    }
+
     //- Return the species
     const std::vector<PolymerSpecie> &species() const
     {
@@ -86,12 +92,6 @@ namespace ThermalDebinding
 
     //- Return the volume fraction of polymers
     double polymerVolumeFraction() const;
-
-    //- Return the volume fraction of pores
-    double poreVolumeFraction() const
-    {
-      return 1 - ceramicVolumeFraction_ - polymerVolumeFraction();
-    }
 
     //- Density of the polymer [kg/m^3]
     double polymerRho_;

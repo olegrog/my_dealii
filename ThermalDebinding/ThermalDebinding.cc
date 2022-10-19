@@ -528,7 +528,8 @@ namespace ThermalDebinding
 
         output_results();
 
-        std::cout << "T = " << T;
+        std::cout << "T = " << T
+                  << " porosity = " << material.poreVolumeFraction();
         for (unsigned int i = 0; i < material.species().size(); i++)
           std::cout << " y" << i + 1 << " = " << material.species()[i].y;
         std::cout << std::endl;

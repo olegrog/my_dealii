@@ -31,7 +31,7 @@ subsection Material
 end
 
 subsection Time
-  set End time                    = 200e3     # [s]
+  set End time                    = 250e3     # [s]
   set Step size                   = 1e3       # [s]
   set Theta                       = 0.5
 end
