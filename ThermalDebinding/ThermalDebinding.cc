@@ -28,6 +28,7 @@
 #include <deal.II/grid/grid_refinement.h>
 #include <deal.II/grid/grid_out.h>
 #include <deal.II/dofs/dof_handler.h>
+#include <deal.II/dofs/dof_renumbering.h>
 #include <deal.II/dofs/dof_tools.h>
 #include <deal.II/fe/fe_q.h>
 #include <deal.II/fe/fe_values.h>
@@ -123,6 +124,13 @@ namespace ThermalDebinding
       }
 
     dof_handler.distribute_dofs(fe);
+
+    if (params.fe.renumbering)
+      {
+        std::cout << "Renumbering DoFs... " << std::flush;
+        DoFRenumbering::Cuthill_McKee(dof_handler);
+        std::cout << "done" << std::endl;
+      }
 
     std::cout << std::endl
               << "===========================================" << std::endl

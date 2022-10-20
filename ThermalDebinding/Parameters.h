@@ -34,6 +34,7 @@ namespace ThermalDebinding
 
     unsigned int poly_degree;
     unsigned int quad_order;
+    bool         renumbering;
   };
 
   struct MeshRefinement : ParameterAcceptor

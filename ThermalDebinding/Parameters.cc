@@ -31,6 +31,7 @@ namespace ThermalDebinding
   {
     add_parameter("Polynomial degree", poly_degree = 1);
     add_parameter("Quadrature order", quad_order = 2);
+    add_parameter("Renumbering", renumbering = false);
   }
 
 
