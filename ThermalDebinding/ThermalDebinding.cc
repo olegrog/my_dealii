@@ -242,6 +242,8 @@ namespace ThermalDebinding
 
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
 
+    std::vector<Tensor<1, dim>> grad_phi(dofs_per_cell);
+
     for (const auto &cell : dof_handler.active_cell_iterators())
       {
         cell_matrix = 0;
@@ -254,19 +256,26 @@ namespace ThermalDebinding
             const double P  = material.P(solution_values[q], T);
             const double D2 = material.D2(P);
 
+            for (unsigned int k = 0; k < dofs_per_cell; ++k)
+              grad_phi[k] = fe_values.shape_grad(k, q);
+
             for (unsigned int i = 0; i < dofs_per_cell; ++i)
-              for (unsigned int j = 0; j < dofs_per_cell; ++j)
-                cell_matrix(i, j) += (D1 + D2) * fe_values.shape_grad(i, q) *
-                                     fe_values.shape_grad(j, q) *
-                                     fe_values.JxW(q);
+              for (unsigned int j = 0; j <= i; ++j)
+                cell_matrix(i, j) +=
+                  (D1 + D2) * grad_phi[i] * grad_phi[j] * fe_values.JxW(q);
           }
 
         cell->get_dof_indices(local_dof_indices);
         for (unsigned int i = 0; i < dofs_per_cell; ++i)
           for (unsigned int j = 0; j < dofs_per_cell; ++j)
-            matrix.add(local_dof_indices[i],
-                       local_dof_indices[j],
-                       cell_matrix(i, j));
+            if (j <= i)
+              matrix.add(local_dof_indices[i],
+                         local_dof_indices[j],
+                         cell_matrix(i, j));
+            else
+              matrix.add(local_dof_indices[i],
+                         local_dof_indices[j],
+                         cell_matrix(j, i));
       }
   }
 
