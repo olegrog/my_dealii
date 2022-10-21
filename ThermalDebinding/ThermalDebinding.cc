@@ -16,6 +16,8 @@
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/function.h>
 #include <deal.II/base/logstream.h>
+#include <deal.II/base/timer.h>
+
 #include <deal.II/lac/vector.h>
 #include <deal.II/lac/full_matrix.h>
 #include <deal.II/lac/dynamic_sparsity_pattern.h>
@@ -23,15 +25,19 @@
 #include <deal.II/lac/solver_cg.h>
 #include <deal.II/lac/precondition.h>
 #include <deal.II/lac/affine_constraints.h>
+
 #include <deal.II/grid/tria.h>
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_refinement.h>
 #include <deal.II/grid/grid_out.h>
+
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_renumbering.h>
 #include <deal.II/dofs/dof_tools.h>
+
 #include <deal.II/fe/fe_q.h>
 #include <deal.II/fe/fe_values.h>
+
 #include <deal.II/numerics/data_out.h>
 #include <deal.II/numerics/vector_tools.h>
 #include <deal.II/numerics/error_estimator.h>
@@ -110,26 +116,25 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::setup_system()
   {
-    if (params.output.verbosity > 0)
-      std::cout << " -- Setup a system" << std::endl;
-
     if (params.output.write_mesh)
       {
-        std::cout << "Writing the mesh... " << std::flush;
+        Timer timer;
+        std::cout << " -- Writing the mesh... " << std::flush;
         std::ofstream out("grid-" + Utilities::int_to_string(time.step(), 3) +
                           GridOut::default_suffix(params.output.mesh_format));
         GridOut       grid_out;
         grid_out.write(triangulation, out, params.output.mesh_format);
-        std::cout << "done" << std::endl;
+        std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
       }
 
     dof_handler.distribute_dofs(fe);
 
     if (params.fe.renumbering)
       {
-        std::cout << "Renumbering DoFs... " << std::flush;
+        Timer timer;
+        std::cout << " -- Renumbering DoFs... " << std::flush;
         DoFRenumbering::Cuthill_McKee(dof_handler);
-        std::cout << "done" << std::endl;
+        std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
       }
 
     std::cout << std::endl
@@ -139,6 +144,10 @@ namespace ThermalDebinding
               << "Number of degrees of freedom: " << dof_handler.n_dofs()
               << std::endl
               << std::endl;
+
+    Timer timer;
+    if (params.output.verbosity > 0)
+      std::cout << " -- Setting up system... " << std::flush;
 
     constraints.clear();
     DoFTools::make_hanging_node_constraints(dof_handler, constraints);
@@ -150,17 +159,6 @@ namespace ThermalDebinding
                                     constraints,
                                     /*keep_constrained_dofs = */ true);
     sparsity_pattern.copy_from(dsp);
-
-    if (params.output.verbosity > 1)
-      {
-        unsigned int n_nonzero = sparsity_pattern.n_nonzero_elements();
-        std::cout << "Sparsity pattern: n_nonzero = " << n_nonzero << " = "
-                  << std::setprecision(3)
-                  << 100. * n_nonzero / std::pow(dof_handler.n_dofs(), 2)
-                  << "%\n";
-        std::ofstream out("sparsity_pattern.svg");
-        sparsity_pattern.print_svg(out);
-      }
 
     mass_matrix.reinit(sparsity_pattern);
     matrix.reinit(sparsity_pattern);
@@ -174,6 +172,22 @@ namespace ThermalDebinding
     system_rhs.reinit(dof_handler.n_dofs());
     rhs.reinit(dof_handler.n_dofs());
     old_rhs.reinit(dof_handler.n_dofs());
+
+    if (params.output.verbosity > 0)
+      {
+        std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
+        unsigned int n_nonzero = sparsity_pattern.n_nonzero_elements();
+        std::cout << "Sparsity pattern: n_nonzero = " << n_nonzero << " = "
+                  << std::setprecision(3)
+                  << 100. * n_nonzero / std::pow(dof_handler.n_dofs(), 2) << "%"
+                  << std::endl;
+      }
+
+    if (params.output.verbosity > 1)
+      {
+        std::ofstream out("sparsity_pattern.svg");
+        sparsity_pattern.print_svg(out);
+      }
   }
 
 
@@ -181,8 +195,9 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::assemble_rhs()
   {
+    Timer timer;
     if (params.output.verbosity > 0)
-      std::cout << " -- Assemble the RHS" << std::endl;
+      std::cout << " -- Assembling the RHS... " << std::flush;
 
     const QGauss<dim> quadrature_formula(params.fe.quad_order);
 
@@ -215,6 +230,9 @@ namespace ThermalDebinding
         for (unsigned int i = 0; i < dofs_per_cell; ++i)
           rhs(local_dof_indices[i]) += cell_rhs(i);
       }
+
+    if (params.output.verbosity > 0)
+      std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
   }
 
 
@@ -222,8 +240,9 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::assemble_matrix()
   {
+    Timer timer;
     if (params.output.verbosity > 0)
-      std::cout << " -- Assemble the matrix" << std::endl;
+      std::cout << " -- Assembling the matrix... " << std::flush;
 
     const QGauss<dim> quadrature_formula(params.fe.quad_order);
 
@@ -277,6 +296,9 @@ namespace ThermalDebinding
                          local_dof_indices[j],
                          cell_matrix(j, i));
       }
+
+    if (params.output.verbosity > 0)
+      std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
   }
 
 
@@ -284,8 +306,9 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::find_extreme_values() const
   {
+    Timer timer;
     if (params.output.verbosity > 0)
-      std::cout << " -- Find the extreme values" << std::endl;
+      std::cout << " -- Finding the extreme values... " << std::flush;
 
     const QIterated<dim> quadrature_formula(QTrapezoid<1>(),
                                             params.fe.quad_order);
@@ -322,6 +345,9 @@ namespace ThermalDebinding
           }
       }
 
+    if (params.output.verbosity > 0)
+      std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
+
     std::cout << "max(P) = " << maxP << " max(Rho) = " << maxRho
               << " min(D1) = " << minD1 << " max(D1) = " << maxD1
               << " min(D2) = " << minD2 << " max(D2) = " << maxD2 << std::endl;
@@ -332,8 +358,9 @@ namespace ThermalDebinding
   template <int dim>
   double Solver<dim>::solve_ls()
   {
+    Timer timer;
     if (params.output.verbosity > 0)
-      std::cout << " -- Solve a linear system" << std::endl;
+      std::cout << " -- Solving a linear system... " << std::flush;
 
     ReductionControl solver_control(params.ls.max_iter,
                                     params.ls.tol * system_rhs.l2_norm(),
@@ -345,6 +372,9 @@ namespace ThermalDebinding
     preconditioner.initialize(system_matrix, params.ls.preconditioner_relax);
 
     cg.solve(system_matrix, solution, system_rhs, preconditioner);
+
+    if (params.output.verbosity > 0)
+      std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
 
     std::cout << "     " << solver_control.last_step()
               << " CG iterations: initial residual = "
@@ -361,30 +391,34 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::output_results() const
   {
-    if (params.output.verbosity > 0)
-      std::cout << " -- Output the results" << std::endl;
-
     if (!params.output.write_vtk_files)
       return;
 
-    if (time.step() % params.output.n_steps == 0)
-      {
-        DataOut<dim>         data_out;
-        ComputePressure<dim> compute_pressure(material, T);
+    if (time.step() % params.output.n_steps != 0)
+      return;
 
-        data_out.attach_dof_handler(dof_handler);
-        data_out.add_data_vector(solution, "density");
-        data_out.add_data_vector(solution, compute_pressure);
+    Timer timer;
+    if (params.output.verbosity > 0)
+      std::cout << " -- Writing results... " << std::flush;
 
-        data_out.build_patches();
+    DataOut<dim>         data_out;
+    ComputePressure<dim> compute_pressure(material, T);
 
-        data_out.set_flags(DataOutBase::VtkFlags(time(), time.step()));
+    data_out.attach_dof_handler(dof_handler);
+    data_out.add_data_vector(solution, "density");
+    data_out.add_data_vector(solution, compute_pressure);
 
-        const std::string filename =
-          "solution-" + Utilities::int_to_string(time.step(), 3) + ".vtk";
-        std::ofstream output(filename);
-        data_out.write_vtk(output);
-      }
+    data_out.build_patches();
+
+    data_out.set_flags(DataOutBase::VtkFlags(time(), time.step()));
+
+    const std::string filename =
+      "solution-" + Utilities::int_to_string(time.step(), 3) + ".vtk";
+    std::ofstream output(filename);
+    data_out.write_vtk(output);
+
+    if (params.output.verbosity > 0)
+      std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
   }
 
 
@@ -392,8 +426,9 @@ namespace ThermalDebinding
   template <int dim>
   void Solver<dim>::make_mesh()
   {
+    Timer timer;
     if (params.output.verbosity > 0)
-      std::cout << " -- Make a mesh" << std::endl;
+      std::cout << " -- Making a mesh... " << std::flush;
 
     GridGenerator::hyper_cube(triangulation, 0, problem.size);
     triangulation.refine_global(params.mr.j_min);
@@ -419,6 +454,9 @@ namespace ThermalDebinding
 
         triangulation.execute_coarsening_and_refinement();
       }
+
+    if (params.output.verbosity > 0)
+      std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
   }
 
 
@@ -430,8 +468,9 @@ namespace ThermalDebinding
     if (dim == 3)
       return false;
 
+    Timer timer;
     if (params.output.verbosity > 0)
-      std::cout << " -- Refine the mesh" << std::endl;
+      std::cout << " -- Refining the mesh... " << std::flush;
 
     Vector<float> estimated_error_per_cell(triangulation.n_active_cells());
 
@@ -468,6 +507,9 @@ namespace ThermalDebinding
         solution_trans.interpolate(previous_solution, solution);
         constraints.distribute(solution);
       }
+
+    if (params.output.verbosity > 0)
+      std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
 
     return is_changed;
   }
