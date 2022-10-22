@@ -1,0 +1,35 @@
+#
+# List of Parameters
+# ---------------------
+
+subsection Problem
+  set Dimensions                  = 1, 0.1    # [m]
+  set Young's modulus             = 0.9e9     # [Pa]
+  set Poisson's ratio             = 0.32
+  set Alpha1                      = -0.025
+  set Alpha2                      = 0
+  set Axis                        = 1
+end
+
+subsection Finite elements
+  set Polynomial degree           = 1
+end
+
+subsection Mesh refinement
+  set Minimum level               = 4
+  set Maximum level               = 8
+  set Refining threshold          = 0.2
+  set Coarsening threshold        = 0.05
+  set Maximum number of cells     = 5000
+end
+
+subsection Linear solver
+  set Max iterations              = 1000
+  set Tolerance                   = 1e-8
+  set Preconditioner relaxation   = 1.2
+end
+
+subsection Output
+  set Log verbosity               = 0
+end
+
