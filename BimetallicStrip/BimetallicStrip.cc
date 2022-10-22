@@ -83,6 +83,7 @@ namespace BimetallicStrip
     SparsityPattern      sparsity_pattern;
     SparseMatrix<double> system_matrix;
 
+    Vector<double> alpha;
     Vector<double> solution;
     Vector<double> system_rhs;
   };
@@ -107,6 +108,7 @@ namespace BimetallicStrip
       std::cout << " -- Setting up system... " << std::flush;
 
     dof_handler.distribute_dofs(fe);
+    alpha.reinit(triangulation.n_active_cells());
     solution.reinit(dof_handler.n_dofs());
     system_rhs.reinit(dof_handler.n_dofs());
 
@@ -212,6 +214,11 @@ namespace BimetallicStrip
         cell->get_dof_indices(local_dof_indices);
         constraints.distribute_local_to_global(
           cell_matrix, cell_rhs, local_dof_indices, system_matrix, system_rhs);
+
+        const auto &qpts = fe_values.get_quadrature_points();
+        Point<dim>  cell_coord =
+          std::accumulate(qpts.begin(), qpts.end(), Point<dim>()) / n_q_points;
+        alpha(cell->active_cell_index()) = compute_alpha(cell_coord);
       }
 
     if (params.output.verbosity > 0)
@@ -292,6 +299,7 @@ namespace BimetallicStrip
 
     data_out.attach_dof_handler(dof_handler);
 
+    // 1. Displacement
     std::vector<std::string> solution_names(dim, "displacement");
 
     std::vector<DataComponentInterpretation::DataComponentInterpretation>
@@ -302,6 +310,9 @@ namespace BimetallicStrip
                              solution_names,
                              DataOut<dim>::type_dof_data,
                              data_component_interpretation);
+
+    // 2. Alpha
+    data_out.add_data_vector(alpha, "alpha");
 
     data_out.build_patches();
 
