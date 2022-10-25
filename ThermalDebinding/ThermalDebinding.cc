@@ -410,12 +410,15 @@ namespace ThermalDebinding
 
     data_out.build_patches();
 
-    data_out.set_flags(DataOutBase::VtkFlags(time(), time.step()));
+    DataOutBase::VtkFlags output_flags(time(), time.step());
+    output_flags.physical_units["density"] = "kg/m^3";
+    output_flags.physical_units[compute_pressure.get_names()[0]] = "Pa";
+    data_out.set_flags(output_flags);
 
     const std::string filename =
-      "solution-" + Utilities::int_to_string(time.step(), 3) + ".vtk";
+      "solution-" + Utilities::int_to_string(time.step(), 3) + ".vtu";
     std::ofstream output(filename);
-    data_out.write_vtk(output);
+    data_out.write_vtu(output);
 
     if (params.output.verbosity > 0)
       std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
