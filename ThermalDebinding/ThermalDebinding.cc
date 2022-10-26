@@ -132,9 +132,13 @@ namespace ThermalDebinding
     if (params.fe.renumbering)
       {
         Timer timer;
-        std::cout << " -- Renumbering DoFs... " << std::flush;
+        if (params.output.verbosity > 0)
+          std::cout << " -- Renumbering DoFs... " << std::flush;
+
         DoFRenumbering::Cuthill_McKee(dof_handler);
-        std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
+
+        if (params.output.verbosity > 0)
+          std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
       }
 
     std::cout << std::endl
@@ -164,9 +168,46 @@ namespace ThermalDebinding
     matrix.reinit(sparsity_pattern);
     system_matrix.reinit(sparsity_pattern);
 
-    MatrixCreator::create_mass_matrix(dof_handler,
-                                      QGauss<dim>(params.fe.quad_order),
-                                      mass_matrix);
+    if (params.fe.lumped_mass_matrix)
+      {
+        mass_matrix = 0;
+
+        const QGauss<dim> quadrature_formula(fe.degree + 1);
+        FEValues<dim>     fe_values(fe,
+                                quadrature_formula,
+                                update_values | update_quadrature_points |
+                                  update_JxW_values);
+
+        const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
+        const unsigned int n_q_points    = quadrature_formula.size();
+
+        FullMatrix<double> cell_lumped_mass_matrix(dofs_per_cell);
+
+        std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+
+        for (const auto &cell : dof_handler.active_cell_iterators())
+          {
+            cell_lumped_mass_matrix = 0;
+            fe_values.reinit(cell);
+
+            for (unsigned int q = 0; q < n_q_points; ++q)
+              for (unsigned int i = 0; i < dofs_per_cell; ++i)
+                for (unsigned int j = 0; j < dofs_per_cell; ++j)
+                  cell_lumped_mass_matrix(j, j) += fe_values.shape_value(i, q) *
+                                                   fe_values.shape_value(j, q) *
+                                                   fe_values.JxW(q);
+
+            cell->get_dof_indices(local_dof_indices);
+            for (unsigned int i = 0; i < dofs_per_cell; ++i)
+              mass_matrix.add(local_dof_indices[i],
+                              local_dof_indices[i],
+                              cell_lumped_mass_matrix(i, i));
+          }
+      }
+    else
+      MatrixCreator::create_mass_matrix(dof_handler,
+                                        QGauss<dim>(fe.degree + 1),
+                                        mass_matrix);
 
     solution.reinit(dof_handler.n_dofs());
     system_rhs.reinit(dof_handler.n_dofs());
@@ -199,7 +240,7 @@ namespace ThermalDebinding
     if (params.output.verbosity > 0)
       std::cout << " -- Assembling the RHS... " << std::flush;
 
-    const QGauss<dim> quadrature_formula(params.fe.quad_order);
+    const QGauss<dim> quadrature_formula(fe.degree + 1);
 
     rhs = 0;
 
@@ -244,7 +285,7 @@ namespace ThermalDebinding
     if (params.output.verbosity > 0)
       std::cout << " -- Assembling the matrix... " << std::flush;
 
-    const QGauss<dim> quadrature_formula(params.fe.quad_order);
+    const QGauss<dim> quadrature_formula(fe.degree + 1);
 
     matrix = 0;
 
@@ -310,8 +351,7 @@ namespace ThermalDebinding
     if (params.output.verbosity > 0)
       std::cout << " -- Finding the extreme values... " << std::flush;
 
-    const QIterated<dim> quadrature_formula(QTrapezoid<1>(),
-                                            params.fe.quad_order);
+    const QIterated<dim> quadrature_formula(QTrapezoid<1>(), fe.degree + 1);
     FEValues<dim>        fe_values(fe, quadrature_formula, update_values);
 
     const unsigned int n_q_points = quadrature_formula.size();
@@ -383,6 +423,12 @@ namespace ThermalDebinding
               << solver_control.last_value() / system_rhs.l2_norm()
               << std::endl;
 
+    if (params.output.verbosity > 1)
+      {
+        std::cout << "SOLUTION\n";
+        solution.print(std::cout);
+      }
+
     return solver_control.initial_value() / system_rhs.l2_norm();
   }
 
@@ -411,7 +457,7 @@ namespace ThermalDebinding
     data_out.build_patches();
 
     DataOutBase::VtkFlags output_flags(time(), time.step());
-    output_flags.physical_units["density"] = "kg/m^3";
+    output_flags.physical_units["density"]                       = "kg/m^3";
     output_flags.physical_units[compute_pressure.get_names()[0]] = "Pa";
     data_out.set_flags(output_flags);
 
@@ -479,7 +525,7 @@ namespace ThermalDebinding
 
     KellyErrorEstimator<dim>::estimate(
       dof_handler,
-      QGauss<dim - 1>(params.fe.quad_order),
+      QGauss<dim - 1>(fe.degree + 1),
       std::map<types::boundary_id, const Function<dim> *>(),
       solution,
       estimated_error_per_cell);

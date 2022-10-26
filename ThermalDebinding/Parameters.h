@@ -33,8 +33,8 @@ namespace ThermalDebinding
     FiniteElements();
 
     unsigned int poly_degree;
-    unsigned int quad_order;
     bool         renumbering;
+    bool         lumped_mass_matrix;
   };
 
   struct MeshRefinement : ParameterAcceptor

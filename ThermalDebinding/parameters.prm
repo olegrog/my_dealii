@@ -38,8 +38,8 @@ end
 
 subsection Finite elements
   set Polynomial degree           = 1
-  set Quadrature order            = 2
   set Renumbering                 = true
+  set Lumped Mass Matrix          = true
 end
 
 subsection Mesh refinement
