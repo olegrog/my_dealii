@@ -24,6 +24,9 @@ namespace ThermalDebinding
     add_parameter("End time", end_ = 500e3);
     add_parameter("Step size", delta_ = 1e3);
     add_parameter("Theta", theta_ = 0.5);
+    add_parameter("Adaptive", adaptive_ = false);
+    add_parameter("Maximum step size", max_delta_ = 10e3);
+    add_parameter("Monomer production per step", delta_y_per_step_ = 1e-2);
   }
 
 } // namespace ThermalDebinding

@@ -33,7 +33,10 @@ end
 subsection Time
   set End time                    = 250e3     # [s]
   set Step size                   = 1e3       # [s]
+  set Maximum step size           = 1e3       # [s]
   set Theta                       = 0.5
+  set Adaptive                    = true
+  set Monomer production per step = 5e-3
 end
 
 subsection Finite elements

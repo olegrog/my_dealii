@@ -586,8 +586,16 @@ namespace ThermalDebinding
     tmp.reinit(solution.size());
     forcing_terms.reinit(solution.size());
 
-    while (time.loop())
+    while (time() <= time.end())
       {
+        if (time.adaptive())
+          {
+            const double delta_y = material.dydt(T) * time.delta();
+            time.update_delta(delta_y);
+            std::cout << "delta_t = " << time.delta() << std::endl;
+          }
+
+        ++time;
         std::cout << "Time step " << time.step() << " at t=" << time()
                   << std::endl;
 
