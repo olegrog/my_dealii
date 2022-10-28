@@ -104,14 +104,25 @@ namespace ThermalDebinding
   {
     using VectorType = Vector<double>;
 
-    SUNDIALS::ARKode<VectorType>::AdditionalData params(
-      /*initial_time = */ 0, /*final_time = */ delta_t);
+    SUNDIALS::ARKode<VectorType>::AdditionalData params;
+    params.final_time                            = delta_t;
+    params.implicit_function_is_linear           = true;
+    params.implicit_function_is_time_independent = true;
     SUNDIALS::ARKode<VectorType> ode(params);
 
-    ode.explicit_function =
+    ode.implicit_function =
       [this, T](double, const VectorType &y, VectorType &ydot) -> int {
       for (unsigned i = 0; i < y.size(); i++)
         ydot[i] = dydt(species_[i], y[i], T);
+      return 0;
+    };
+    ode.jacobian_times_vector = [](const VectorType &v,
+                                   VectorType &      Jv,
+                                   double,
+                                   const VectorType &y,
+                                   const VectorType &fy) -> int {
+      for (unsigned i = 0; i < y.size(); i++)
+        Jv[i] = v[i] * fy[i] / y[i];
       return 0;
     };
 
