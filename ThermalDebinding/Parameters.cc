@@ -22,6 +22,7 @@ namespace ThermalDebinding
     add_parameter("Hyper cube size", size = 1e-2);
     add_parameter("Initial temperature", T0 = 300);
     add_parameter("Heating rate", heating_rate = 1.667e-3);
+    add_parameter("Minimum pressure", min_pressure = 1e3);
   }
 
 

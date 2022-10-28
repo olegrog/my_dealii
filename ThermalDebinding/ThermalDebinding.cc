@@ -68,7 +68,7 @@ namespace ThermalDebinding
     void   setup_system();
     void   assemble_rhs();
     void   assemble_matrix();
-    void   find_extreme_values() const;
+    double find_extreme_values() const;
     double solve_ls();
     void   output_results() const;
     void   make_mesh();
@@ -345,7 +345,7 @@ namespace ThermalDebinding
 
 
   template <int dim>
-  void Solver<dim>::find_extreme_values() const
+  double Solver<dim>::find_extreme_values() const
   {
     Timer timer;
     if (params.output.verbosity > 0)
@@ -391,6 +391,8 @@ namespace ThermalDebinding
     std::cout << "max(P) = " << maxP << " max(Rho) = " << maxRho
               << " min(D1) = " << minD1 << " max(D1) = " << maxD1
               << " min(D2) = " << minD2 << " max(D2) = " << maxD2 << std::endl;
+
+    return maxP;
   }
 
 
@@ -650,7 +652,10 @@ namespace ThermalDebinding
           std::cout << " y" << i + 1 << " = " << material.species()[i].y;
         std::cout << std::endl;
 
-        find_extreme_values();
+        const double maxP = find_extreme_values();
+
+        if (maxP < problem.min_pressure)
+          break;
 
         if (time.step() % params.mr.n_steps == 0)
           {

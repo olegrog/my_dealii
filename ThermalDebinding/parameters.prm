@@ -7,6 +7,7 @@ subsection Problem
   set Initial temperature         = 293       # [K]
   # 1.667e-3 K/s = 6K/hour
   set Heating rate                = 1.667e-3  # [K/s]
+  set Minimum pressure            = 1e3       # [Pa]
 end
 
 subsection Material
@@ -31,7 +32,7 @@ subsection Material
 end
 
 subsection Time
-  set End time                    = 250e3     # [s]
+  set End time                    = 300e3     # [s]
   set Step size                   = 1e3       # [s]
   set Maximum step size           = 1e3       # [s]
   set Theta                       = 0.5
@@ -46,8 +47,8 @@ subsection Finite elements
 end
 
 subsection Mesh refinement
-  set Minimum level               = 4
-  set Maximum level               = 8
+  set Minimum level               = 3
+  set Maximum level               = 6
   set Number of time steps        = 1
   set Refining threshold          = 0.5
   set Coarsening threshold        = 0.1

@@ -26,6 +26,7 @@ namespace ThermalDebinding
     double size;
     double T0;
     double heating_rate;
+    double min_pressure;
   };
 
   struct FiniteElements : ParameterAcceptor
