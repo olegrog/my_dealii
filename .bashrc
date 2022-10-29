@@ -35,7 +35,7 @@ _find_dealii_files() {
     res1="$(locate "/$1" | grep "/usr/src/dealii" | grep -v tests)"
     res2="$(find ~ -wholename "*/$1*" | grep -v examples)"
     if [[ -z "$res1$res2" ]]; then
-        echo -e "${RED}Missing filename!${NC}" >&2
+        echo -e "${RED}Missing filename"\!"${NC}" >&2
     else
         echo -e "$res1\n$res2"
     fi
