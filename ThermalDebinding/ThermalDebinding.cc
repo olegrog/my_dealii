@@ -68,9 +68,9 @@ namespace ThermalDebinding
     void   setup_system();
     void   assemble_rhs();
     void   assemble_matrix();
-    double find_extreme_values() const;
+    double find_extreme_values();
     double solve_ls();
-    void   output_results() const;
+    void   output_results();
     void   make_mesh();
     bool   refine_mesh();
 
@@ -95,6 +95,8 @@ namespace ThermalDebinding
     Vector<double> rhs;
     Vector<double> system_rhs;
 
+    TimerOutput computing_timer;
+
     double T; // current temperature [K]
   };
 
@@ -108,6 +110,9 @@ namespace ThermalDebinding
     , time(time)
     , fe(params.fe.poly_degree)
     , dof_handler(triangulation)
+    , computing_timer(std::cout,
+                      TimerOutput::never,
+                      TimerOutput::cpu_and_wall_times_grouped)
     , T(problem.T0)
   {}
 
@@ -119,12 +124,17 @@ namespace ThermalDebinding
     if (params.output.write_mesh)
       {
         Timer timer;
-        std::cout << " -- Writing the mesh... " << std::flush;
+        if (params.output.verbosity > 0)
+          std::cout << " -- Writing the mesh... " << std::flush;
+        TimerOutput::Scope t(computing_timer, "Writing the mesh");
+
         std::ofstream out("grid-" + Utilities::int_to_string(time.step(), 3) +
                           GridOut::default_suffix(params.output.mesh_format));
         GridOut       grid_out;
         grid_out.write(triangulation, out, params.output.mesh_format);
-        std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
+
+        if (params.output.verbosity > 0)
+          std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
       }
 
     dof_handler.distribute_dofs(fe);
@@ -134,6 +144,7 @@ namespace ThermalDebinding
         Timer timer;
         if (params.output.verbosity > 0)
           std::cout << " -- Renumbering DoFs... " << std::flush;
+        TimerOutput::Scope t(computing_timer, "Renumbering DoFs");
 
         DoFRenumbering::Cuthill_McKee(dof_handler);
 
@@ -152,6 +163,7 @@ namespace ThermalDebinding
     Timer timer;
     if (params.output.verbosity > 0)
       std::cout << " -- Setting up system... " << std::flush;
+    TimerOutput::Scope t(computing_timer, "Setting up system");
 
     constraints.clear();
     DoFTools::make_hanging_node_constraints(dof_handler, constraints);
@@ -239,6 +251,7 @@ namespace ThermalDebinding
     Timer timer;
     if (params.output.verbosity > 0)
       std::cout << " -- Assembling the RHS... " << std::flush;
+    TimerOutput::Scope t(computing_timer, "Assembling the RHS");
 
     const QGauss<dim> quadrature_formula(fe.degree + 1);
 
@@ -246,8 +259,7 @@ namespace ThermalDebinding
 
     FEValues<dim> fe_values(fe,
                             quadrature_formula,
-                            update_values | update_quadrature_points |
-                              update_JxW_values);
+                            update_values | update_JxW_values);
 
     const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
     const unsigned int n_q_points    = quadrature_formula.size();
@@ -284,6 +296,7 @@ namespace ThermalDebinding
     Timer timer;
     if (params.output.verbosity > 0)
       std::cout << " -- Assembling the matrix... " << std::flush;
+    TimerOutput::Scope t(computing_timer, "Assembling the matrix");
 
     const QGauss<dim> quadrature_formula(fe.degree + 1);
 
@@ -345,11 +358,12 @@ namespace ThermalDebinding
 
 
   template <int dim>
-  double Solver<dim>::find_extreme_values() const
+  double Solver<dim>::find_extreme_values()
   {
     Timer timer;
     if (params.output.verbosity > 0)
       std::cout << " -- Finding the extreme values... " << std::flush;
+    TimerOutput::Scope t(computing_timer, "Finding the extreme values");
 
     const QIterated<dim> quadrature_formula(QTrapezoid<1>(), fe.degree + 1);
     FEValues<dim>        fe_values(fe, quadrature_formula, update_values);
@@ -403,6 +417,7 @@ namespace ThermalDebinding
     Timer timer;
     if (params.output.verbosity > 0)
       std::cout << " -- Solving a linear system... " << std::flush;
+    TimerOutput::Scope t(computing_timer, "Solving a linear system");
 
     ReductionControl solver_control(params.ls.max_iter,
                                     params.ls.tol * system_rhs.l2_norm(),
@@ -437,7 +452,7 @@ namespace ThermalDebinding
 
 
   template <int dim>
-  void Solver<dim>::output_results() const
+  void Solver<dim>::output_results()
   {
     if (!params.output.write_vtk_files)
       return;
@@ -448,6 +463,7 @@ namespace ThermalDebinding
     Timer timer;
     if (params.output.verbosity > 0)
       std::cout << " -- Writing results... " << std::flush;
+    TimerOutput::Scope t(computing_timer, "Writing results");
 
     DataOut<dim>         data_out;
     ComputePressure<dim> compute_pressure(material, T);
@@ -480,6 +496,7 @@ namespace ThermalDebinding
     Timer timer;
     if (params.output.verbosity > 0)
       std::cout << " -- Making a mesh... " << std::flush;
+    TimerOutput::Scope t(computing_timer, "Making a mesh");
 
     GridGenerator::hyper_cube(triangulation, 0, problem.size);
     triangulation.refine_global(params.mr.j_min);
@@ -522,6 +539,7 @@ namespace ThermalDebinding
     Timer timer;
     if (params.output.verbosity > 0)
       std::cout << " -- Refining the mesh... " << std::flush;
+    TimerOutput::Scope t(computing_timer, "Refining the mesh");
 
     Vector<float> estimated_error_per_cell(triangulation.n_active_cells());
 
@@ -601,6 +619,7 @@ namespace ThermalDebinding
         std::cout << "Time step " << time.step() << " at t=" << time()
                   << std::endl;
 
+        computing_timer.reset();
         T = problem.T0 + problem.heating_rate * time();
         material.evolve(T, time.delta());
 
@@ -609,15 +628,24 @@ namespace ThermalDebinding
 
         unsigned int i = 0;
 
-        // Assemble system_rhs
-        forcing_terms = rhs;
-        forcing_terms *= time.delta() * time.theta();
-        forcing_terms.add(time.delta() * (1 - time.theta()), old_rhs);
-        mass_matrix.vmult(system_rhs, solution);
-        matrix.vmult(tmp, solution);
-        system_rhs.add(-(1 - time.theta()) * time.delta(), tmp);
-        system_rhs += forcing_terms;
-        constraints.condense(system_rhs);
+        {
+          Timer timer;
+          if (params.output.verbosity > 0)
+            std::cout << " -- Assembling the system RHS... " << std::flush;
+          TimerOutput::Scope t(computing_timer, "Assembling the system RHS");
+
+          forcing_terms = rhs;
+          forcing_terms *= time.delta() * time.theta();
+          forcing_terms.add(time.delta() * (1 - time.theta()), old_rhs);
+          mass_matrix.vmult(system_rhs, solution);
+          matrix.vmult(tmp, solution);
+          system_rhs.add(-(1 - time.theta()) * time.delta(), tmp);
+          system_rhs += forcing_terms;
+          constraints.condense(system_rhs);
+
+          if (params.output.verbosity > 0)
+            std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
+        }
 
         // Boundary conditions
         std::map<types::global_dof_index, double> boundary_values;
@@ -630,7 +658,12 @@ namespace ThermalDebinding
           {
             assemble_matrix();
 
-            // Assemble system_matrix
+            Timer timer;
+            if (params.output.verbosity > 0)
+              std::cout << " -- Assembling the system matrix... " << std::flush;
+            TimerOutput::Scope t(computing_timer,
+                                 "Assembling the system matrix");
+
             system_matrix.copy_from(mass_matrix);
             system_matrix.add(time.theta() * time.delta(), matrix);
             constraints.condense(system_matrix);
@@ -639,6 +672,9 @@ namespace ThermalDebinding
                                                system_matrix,
                                                solution,
                                                system_rhs);
+
+            if (params.output.verbosity > 0)
+              std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
           }
         while (solve_ls() > params.ns.tol && ++i < params.ns.max_iter);
 
@@ -666,6 +702,9 @@ namespace ThermalDebinding
                 assemble_rhs();
               }
           }
+
+        if (params.output.profiling)
+          computing_timer.print_summary();
       }
   }
 } // namespace ThermalDebinding

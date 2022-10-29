@@ -72,5 +72,6 @@ subsection Output
   set Write mesh                  = false
   set Number of time steps        = 10
   set Log verbosity               = 0
+  set Profiling                   = true
 end
 

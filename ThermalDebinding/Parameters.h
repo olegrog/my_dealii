@@ -80,6 +80,7 @@ namespace ThermalDebinding
     GridOut::OutputFormat mesh_format;
     unsigned int          n_steps;
     unsigned int          verbosity;
+    bool                  profiling;
   };
 
   struct Parameters
