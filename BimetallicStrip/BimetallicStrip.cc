@@ -67,6 +67,7 @@ namespace BimetallicStrip
     void refine_mesh();
     void output_results(const unsigned int cycle) const;
 
+    bool   at_interface(const Point<dim> &point) const;
     double compute_alpha(const Point<dim> &point) const;
     void   compute_alpha(const std::vector<Point<dim>> &points,
                          std::vector<double> &          values) const;
@@ -144,15 +145,23 @@ namespace BimetallicStrip
     if (params.output.verbosity > 0)
       std::cout << " -- Assembling the system... " << std::flush;
 
-    QGauss<dim> quadrature_formula(fe.degree + 1);
+    const QGauss<dim>     quadrature_formula(fe.degree + 1);
+    const QGauss<dim - 1> face_quadrature_formula(fe.degree + 1);
 
-    FEValues<dim> fe_values(fe,
+    FEValues<dim>     fe_values(fe,
                             quadrature_formula,
                             update_gradients | update_quadrature_points |
                               update_JxW_values);
+    FEFaceValues<dim> fe_face_values(fe,
+                                     face_quadrature_formula,
+                                     update_gradients |
+                                       update_quadrature_points |
+                                       update_normal_vectors |
+                                       update_JxW_values);
 
     const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
     const unsigned int n_q_points    = quadrature_formula.size();
+
 
     FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
     Vector<double>     cell_rhs(dofs_per_cell);
@@ -209,6 +218,37 @@ namespace BimetallicStrip
                                problem.threeK * alpha_values[q_point] *
                                fe_values.JxW(q_point);
               }
+          }
+
+        if (problem.strain_jump)
+          {
+            for (const auto &face : cell->face_iterators())
+              if (at_interface(face->center()))
+                {
+                  fe_face_values.reinit(cell, face);
+
+                  for (const unsigned int i : fe_face_values.dof_indices())
+                    {
+                      const unsigned int component_i =
+                        fe.system_to_component_index(i).first;
+                      for (const unsigned int q_point :
+                           fe_face_values.quadrature_point_indices())
+                        {
+                          const auto x =
+                            fe_face_values.quadrature_point(q_point) -
+                            problem.center;
+                          const auto &n = fe_face_values.normal_vector(q_point);
+                          const auto &grad_phi =
+                            fe_face_values.shape_grad(i, q_point);
+
+                          cell_rhs(i) += (x * grad_phi * n[component_i] +
+                                          n * grad_phi * x[component_i]) *
+                                         problem.threeK / 4 *
+                                         (problem.alpha1 - problem.alpha2) *
+                                         fe_face_values.JxW(q_point);
+                        }
+                    }
+                }
           }
 
         cell->get_dof_indices(local_dof_indices);
@@ -316,8 +356,8 @@ namespace BimetallicStrip
 
     data_out.build_patches();
 
-    std::ofstream output("solution-" + std::to_string(cycle) + ".vtk");
-    data_out.write_vtk(output);
+    std::ofstream output("solution-" + std::to_string(cycle) + ".vtu");
+    data_out.write_vtu(output);
 
     if (params.output.verbosity > 0)
       std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
@@ -360,11 +400,20 @@ namespace BimetallicStrip
 
 
   template <int dim>
+  bool Solver<dim>::at_interface(const Point<dim> &point) const
+  {
+    const double small = 1e-12 * problem.dimensions.norm();
+    return std::fabs(point[problem.axis] - problem.center[problem.axis]) <
+           small;
+  }
+
+
+
+  template <int dim>
   double Solver<dim>::compute_alpha(const Point<dim> &point) const
   {
-    return point[problem.axis] < problem.dimensions[problem.axis] / 2 ?
-             problem.alpha1 :
-             problem.alpha2;
+    return point[problem.axis] < problem.center[problem.axis] ? problem.alpha1 :
+                                                                problem.alpha2;
   }
 
 

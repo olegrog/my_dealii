@@ -26,6 +26,7 @@ namespace BimetallicStrip
     add_parameter("Alpha1", alpha1 = 0.025);
     add_parameter("Alpha2", alpha2 = 0);
     add_parameter("Axis", axis = 0);
+    add_parameter("Strain jump", strain_jump = false);
   }
 
 
@@ -36,6 +37,7 @@ namespace BimetallicStrip
     mu     = E / (2 * (1 + nu));
     lambda = nu * E / (1 + nu) / (1 - 2 * nu);
     threeK = E / (1 - 2 * nu);
+    center = dimensions / 2;
   }
 
 

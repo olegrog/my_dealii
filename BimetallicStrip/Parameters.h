@@ -28,10 +28,12 @@ namespace BimetallicStrip
     void parse_parameters(ParameterHandler &prm) override;
 
     Point<dim>   dimensions;
+    Point<dim>   center;
     double       alpha1, alpha2;
     double       E, nu;
     double       mu, lambda, threeK;
     unsigned int axis;
+    bool         strain_jump;
   };
 
   struct FiniteElements : ParameterAcceptor

@@ -9,6 +9,7 @@ subsection Problem
   set Alpha1                      = -0.025
   set Alpha2                      = 0
   set Axis                        = 1
+  set Strain jump                 = false
 end
 
 subsection Finite elements
@@ -19,7 +20,7 @@ subsection Mesh refinement
   set Minimum level               = 4
   set Maximum level               = 8
   set Refining threshold          = 0.2
-  set Coarsening threshold        = 0.05
+  set Coarsening threshold        = 0
   set Maximum number of cells     = 5000
 end
 
