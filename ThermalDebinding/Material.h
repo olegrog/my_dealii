@@ -74,6 +74,9 @@ namespace ThermalDebinding
       return species_;
     }
 
+    //- Return the volume fraction of polymers
+    double polymerVolumeFraction() const;
+
     //- Integrate polymer specie concentrations over time
     void evolve(double T, double delta_t);
 
@@ -89,9 +92,6 @@ namespace ThermalDebinding
 
     //- Return the permeability coefficient [m^2]
     double K() const;
-
-    //- Return the volume fraction of polymers
-    double polymerVolumeFraction() const;
 
     //- Density of the polymer [kg/m^3]
     double polymerRho_;
@@ -118,7 +118,7 @@ namespace ThermalDebinding
     double meanParticleSize_;
 
     //- Model parameter for permeability []
-    double particleSizeExponent_;
+    int particleSizeExponent_;
 
     //- Polymer species
     std::vector<PolymerSpecie> species_;

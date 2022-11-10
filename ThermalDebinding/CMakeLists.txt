@@ -10,7 +10,7 @@ SET(TARGET_SRC
   )
 
 # Define the output that should be cleaned:
-SET(CLEAN_UP_FILES *.vtk)
+SET(CLEAN_UP_FILES *.vtu)
 
 # Usually, you will not need to modify anything beyond this point...
 

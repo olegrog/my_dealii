@@ -7,7 +7,7 @@ subsection Problem
   set Initial temperature         = 293       # [K]
   # 1.667e-3 K/s = 6K/hour
   set Heating rate                = 1.667e-3  # [K/s]
-  set Minimum pressure            = 1e3       # [Pa]
+  set Minimum pressure            = 1e4       # [Pa]
 end
 
 subsection Material
@@ -26,7 +26,7 @@ subsection Material
   end
 
   subsection Diffusion
-    set Pre-exponential factor    = 6.92e-4   # [m/s^2]
+    set Pre-exponential factor    = 6.92e-8   # [m/s^2]
     set Activation energy         = 38.37e3   # [J/mol]
   end
 end

@@ -100,6 +100,19 @@ namespace ThermalDebinding
 
 
 
+  double Material::polymerVolumeFraction() const
+  {
+    return std::accumulate(species_.cbegin(),
+                           species_.cend(),
+                           0.,
+                           [](double res, const PolymerSpecie &specie) {
+                             return res + specie.y;
+                           }) *
+           initialPolymerFraction();
+  }
+
+
+
   void Material::evolve(double T, double delta_t)
   {
     using VectorType = Vector<double>;
@@ -157,19 +170,6 @@ namespace ThermalDebinding
            std::pow(phiM / (1 - ceramicVolumeFraction_),
                     particleSizeExponent_) *
            std::pow(phiM, 3) / std::pow(1 - phiM, 2);
-  }
-
-
-
-  double Material::polymerVolumeFraction() const
-  {
-    return std::accumulate(species_.cbegin(),
-                           species_.cend(),
-                           0.,
-                           [](double res, const PolymerSpecie &specie) {
-                             return res + specie.y;
-                           }) *
-           initialPolymerFraction();
   }
 
 } // namespace ThermalDebinding

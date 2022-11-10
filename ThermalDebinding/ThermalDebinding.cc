@@ -69,6 +69,7 @@ namespace ThermalDebinding
     void   assemble_rhs();
     void   assemble_matrix();
     double find_extreme_values();
+    void   find_integral_values();
     double solve_ls();
     void   output_results();
     void   make_mesh();
@@ -412,6 +413,55 @@ namespace ThermalDebinding
 
 
   template <int dim>
+  void Solver<dim>::find_integral_values()
+  {
+    Timer timer;
+    if (params.output.verbosity > 0)
+      std::cout << " -- Finding the integral values... " << std::flush;
+    TimerOutput::Scope t(computing_timer, "Finding the integral values");
+
+    const QGauss<dim> quadrature_formula(fe.degree + 1);
+    FEValues<dim>     fe_values(fe,
+                            quadrature_formula,
+                            update_values | update_quadrature_points |
+                              update_JxW_values);
+
+
+    const unsigned int n_q_points = quadrature_formula.size();
+
+    std::vector<double> solution_values(n_q_points);
+
+    double organicRelativeMass = 0;
+    double totalVolume         = 0;
+
+    // 1. Compute monomer mass / initial polymer mass
+    for (const auto &cell : dof_handler.active_cell_iterators())
+      {
+        fe_values.reinit(cell);
+        fe_values.get_function_values(solution, solution_values);
+
+        for (unsigned int q = 0; q < n_q_points; ++q)
+          {
+            organicRelativeMass +=
+              solution_values[q] / material.polymerRho() * fe_values.JxW(q);
+            totalVolume += fe_values.JxW(q);
+          }
+      }
+    organicRelativeMass /= totalVolume * material.initialPolymerFraction();
+
+    // 2. Compute polymer mass / initial polymer mass
+    organicRelativeMass +=
+      material.polymerVolumeFraction() / material.initialPolymerFraction();
+
+    if (params.output.verbosity > 0)
+      std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
+
+    std::cout << "organicRelativeMass = " << organicRelativeMass << std::endl;
+  }
+
+
+
+  template <int dim>
   double Solver<dim>::solve_ls()
   {
     Timer timer;
@@ -686,9 +736,12 @@ namespace ThermalDebinding
                   << " porosity = " << material.poreVolumeFraction();
         for (unsigned int i = 0; i < material.species().size(); i++)
           std::cout << " y" << i + 1 << " = " << material.species()[i].y;
-        std::cout << std::endl;
+        std::cout << " rho_p = "
+                  << material.polymerRho() * material.polymerVolumeFraction()
+                  << std::endl;
 
         const double maxP = find_extreme_values();
+        find_integral_values();
 
         if (maxP < problem.min_pressure)
           break;
