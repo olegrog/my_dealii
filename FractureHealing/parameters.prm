@@ -1,0 +1,110 @@
+#
+# List of Parameters
+# ---------------------
+
+subsection Model
+  set Haptotactic cell migration    = 0.014
+  set Haptotactic cell migration K  = 0.25
+  set Haptokinetic cell migration   = 0.0034
+  set Haptokinetic cell migration K = 0.5
+  set Mesenchymal proliferation     = 1.01
+  set Mesenchymal proliferation K   = 0.1
+  set Chondrocyte proliferation     = 1.01
+  set Chondrocyte proliferation K   = 0.1
+  set Osteoblast proliferation      = 0.202
+  set Osteoblast proliferation K    = 0.1
+  set Mesenchymal limiting density  = 1
+  set Chondrocyte limiting density  = 1
+  set Osteoblast limiting density   = 1
+  set Diffentiation into chondrocytes = 10
+  set Diffentiation into chondrocytes H = 0.1
+  set Diffentiation into osteoblasts = 50
+  set Diffentiation into osteoblasts H = 0.2
+  set Endochondral ossification     = 1000
+  set Endochondral ossification H   = 0.1
+  set Endochondral replacement B    = 1.5
+  set Bone decay                    = 0.1
+  set Cartilage synthesis           = 0.2
+  set Bone synthesis                = 2
+  set Cartilage degradation 1       = 0.2
+  set Cartilage degradation 2       = 2
+  set Bone degradation              = 2
+  set Chondrogenic GF diffusion     = 0.005
+  set Osteogenic GF diffusion       = 0.005
+  set Chondrogenic GF growth        = 50
+  set Chondrogenic GF growth H      = 1
+  set Chondrogenic GF growth K      = 0.1
+  set Osteogenic GF growth          = 500
+  set Osteogenic GF growth H        = 1
+  set Chondrogenic GF decay         = 100
+  set Osteogenic GF decay           = 100
+end
+
+subsection Initial values
+  set Mesenchymal cellular density  = 0.5 + 0.5*((x/1.1)^2 + (y/0.9)^2 < 1)
+  set Chondrocytes cellular density = 0
+  set Osteoblasts cellular density  = 0
+  set Cartilage ECM density         = 0.1
+  set Bone ECM density              = 0
+  set Chondrogenic GF density       = 20
+  set Osteogenic GF density         = 20
+end
+
+subsection Boundary values
+  subsection Boundary_1 # Fracture
+    set Location                    = (y < 0.2) && (abs(x-0.2) < 1e-10)
+    set Chondrogenic GF density     = 20
+  end
+  subsection Boundary_2 # Periosteum
+    set Location                    = (x > 0.4) && (abs(y-0.2) < 1e-10)
+    set Osteogenic GF density       = 20
+  end
+end
+
+subsection Geometry
+  set Size                          = 1.4, 1
+  set Repetitions                   = 7, 5
+  set Cells to remove               = -6, 1
+end
+
+subsection Time
+  set End time                      = 10
+  set Step size                     = 1e-2
+  set Theta                         = 0.5
+end
+
+subsection Finite elements
+  set Polynomial degree             = 1
+  set Renumbering                   = true
+end
+
+subsection Mesh refinement
+  set Minimum level                 = 3
+  set Maximum level                 = 5
+  set Number of time steps          = 1
+  set IC refining threshold         = 0.999
+  set Refining threshold            = 0.5
+  set Coarsening threshold          = 0.1
+  set Maximum number of cells       = 5000
+end
+
+subsection Linear solver
+  set Max iterations                = 1000
+  set Tolerance                     = 1e-8
+  set Reduce                        = 0.05
+  set Preconditioner relaxation     = 1.0
+end
+
+subsection Nonlinear solver
+  set Max iterations                = 15
+  set Tolerance                     = 1e-7
+end
+
+subsection Output
+  set Write VTK files               = true
+  set Write mesh                    = false
+  set Number of time steps          = 1
+  set Log verbosity                 = 0
+  set Profiling                     = true
+end
+
