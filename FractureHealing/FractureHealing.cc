@@ -161,7 +161,8 @@ namespace FractureHealing
     {
       std::map<types::boundary_id, unsigned int> id_faces;
 
-      for (auto &cell : triangulation.active_cell_iterators())
+      // NB: loop over all the cells, not only active
+      for (auto &cell : triangulation.cell_iterators())
         for (auto &face : cell->face_iterators())
           if (face->at_boundary())
             {
@@ -271,7 +272,7 @@ namespace FractureHealing
           }
 
         cell->get_dof_indices(local_dof_indices);
-        for (unsigned int i = 0; i < dofs_per_cell; ++i)
+        for (const unsigned int i : fe_values.dof_indices())
           rhs(local_dof_indices[i]) += cell_rhs(i);
       }
 
@@ -322,36 +323,36 @@ namespace FractureHealing
         params.model.get_reaction_matrices(R_values, solution_values);
 
         for (const unsigned int q_point : fe_values.quadrature_point_indices())
-          for (const unsigned int k : fe_values.dof_indices())
-            {
-              phi[k]      = fe_values.shape_value(k, q_point);
-              grad_phi[k] = fe_values.shape_grad(k, q_point);
-            }
-
-        for (const unsigned int i : fe_values.dof_indices())
           {
-            const unsigned int component_i =
-              fe.system_to_component_index(i).first;
-
-            for (const unsigned int j : fe_values.dof_indices())
+            for (const unsigned int k : fe_values.dof_indices())
               {
-                const unsigned int component_j =
-                  fe.system_to_component_index(j).first;
+                phi[k]      = fe_values.shape_value(k, q_point);
+                grad_phi[k] = fe_values.shape_grad(k, q_point);
+              }
 
-                for (const unsigned int q_point :
-                     fe_values.quadrature_point_indices())
-                  cell_matrix(i, j) +=
-                    (D_values[q_point][component_i][component_j] * grad_phi[i] *
-                       grad_phi[j] -
-                     R_values[q_point][component_i][component_j] * phi[i] *
-                       phi[j]) *
-                    fe_values.JxW(q_point);
+            for (const unsigned int i : fe_values.dof_indices())
+              {
+                const unsigned int component_i =
+                  fe.system_to_component_index(i).first;
+
+                for (const unsigned int j : fe_values.dof_indices())
+                  {
+                    const unsigned int component_j =
+                      fe.system_to_component_index(j).first;
+
+                    cell_matrix(i, j) +=
+                      (D_values[q_point][component_i][component_j] *
+                         grad_phi[i] * grad_phi[j] -
+                       R_values[q_point][component_i][component_j] * phi[i] *
+                         phi[j]) *
+                      fe_values.JxW(q_point);
+                  }
               }
           }
 
         cell->get_dof_indices(local_dof_indices);
-        for (unsigned int i = 0; i < dofs_per_cell; ++i)
-          for (unsigned int j = 0; j < dofs_per_cell; ++j)
+        for (const unsigned int i : fe_values.dof_indices())
+          for (const unsigned int j : fe_values.dof_indices())
             matrix.add(local_dof_indices[i],
                        local_dof_indices[j],
                        cell_matrix(i, j));
@@ -414,10 +415,18 @@ namespace FractureHealing
     DataOut<dim> data_out;
 
     data_out.attach_dof_handler(dof_handler);
-    data_out.add_data_vector(solution, Model::component_names);
+    {
+      // Remove all spaces from Model::component_names
+      std::vector<std::string> component_names = Model::component_names;
+      for (auto &name : component_names)
+        std::replace(name.begin(), name.end(), ' ', '_');
+      data_out.add_data_vector(solution, component_names);
+    }
     data_out.build_patches();
 
     DataOutBase::VtkFlags output_flags(time(), time.step());
+    output_flags.compression_level =
+      DataOutBase::VtkFlags::ZlibCompressionLevel::best_speed;
     data_out.set_flags(output_flags);
 
     const std::string filename =
@@ -551,7 +560,15 @@ namespace FractureHealing
     setup_system();
 
     // Initial conditions
-    VectorTools::interpolate(dof_handler, params.ic, solution);
+    if (params.ic.project_functions)
+      VectorTools::project(dof_handler,
+                           constraints,
+                           QGauss<dim>(fe.degree + 1),
+                           params.ic,
+                           solution);
+    else
+      VectorTools::interpolate(dof_handler, params.ic, solution);
+
     output_results();
 
     assemble_matrix();
@@ -572,8 +589,6 @@ namespace FractureHealing
 
         old_rhs = rhs;
         assemble_rhs();
-
-        unsigned int i = 0;
 
         {
           Timer timer;
@@ -598,6 +613,8 @@ namespace FractureHealing
         std::map<types::global_dof_index, double> boundary_values;
         params.bc.interpolate_boundary_values(dof_handler, boundary_values);
 
+        unsigned int i = 0;
+
         do
           {
             assemble_matrix();
@@ -612,10 +629,12 @@ namespace FractureHealing
             system_matrix.add(time.theta() * time.delta(), matrix);
             constraints.condense(system_matrix);
 
+            // NB: last `false` makes matrix unsymmetric, but CG still works!
             MatrixTools::apply_boundary_values(boundary_values,
                                                system_matrix,
                                                solution,
-                                               system_rhs);
+                                               system_rhs,
+                                               /* eliminate_columns = */ false);
 
             if (params.output.verbosity > 0)
               std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;

@@ -64,6 +64,8 @@ namespace FractureHealing
 
     void declare_parameters(ParameterHandler &prm) override;
     void parse_parameters(ParameterHandler &prm) override;
+
+    bool project_functions;
   };
 
   template <int dim>

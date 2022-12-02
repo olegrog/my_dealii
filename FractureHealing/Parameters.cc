@@ -185,7 +185,9 @@ namespace FractureHealing
   InitialValues<dim>::InitialValues()
     : ParameterAcceptor("Initial values")
     , FunctionParser<dim>(Model::n_components)
-  {}
+  {
+    add_parameter("Project functions", project_functions = false);
+  }
 
 
 
@@ -243,37 +245,35 @@ namespace FractureHealing
   {
     for (unsigned int b = 0; b < max_n_boundaries; ++b)
       {
-        if (prm.subsection_path_exists({subsection(b)}))
+        prm.enter_subsection(subsection(b));
+
+        std::vector<std::string> expressions;
+        std::vector<bool>        cmask;
+
+        for (auto component : Model::component_names)
           {
-            prm.enter_subsection(subsection(b));
-
-            std::vector<std::string> expressions;
-            std::vector<bool>        cmask;
-
-            for (auto component : Model::component_names)
+            const std::string expression = prm.get(component);
+            if (expression == "none")
               {
-                const std::string expression = prm.get(component);
-                if (expression == "none")
-                  {
-                    // Zero gradient BC
-                    expressions.push_back("0.0");
-                    cmask.push_back(false);
-                  }
-                else
-                  {
-                    // Dirichlet BC
-                    expressions.push_back(expression);
-                    cmask.push_back(true);
-                  }
+                // Zero gradient BC
+                expressions.push_back("-1");
+                cmask.push_back(false);
               }
-
-            boundaries.emplace(std::piecewise_construct,
-                               std::forward_as_tuple(b),
-                               std::forward_as_tuple(prm.get("Location"),
-                                                     expressions,
-                                                     cmask));
-            prm.leave_subsection();
+            else
+              {
+                // Dirichlet BC
+                expressions.push_back(expression);
+                cmask.push_back(true);
+              }
           }
+
+        if (std::find(begin(cmask), end(cmask), true) != end(cmask))
+          boundaries.emplace(std::piecewise_construct,
+                             std::forward_as_tuple(b),
+                             std::forward_as_tuple(prm.get("Location"),
+                                                   expressions,
+                                                   cmask));
+        prm.leave_subsection();
       }
   }
 
