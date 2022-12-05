@@ -613,7 +613,8 @@ namespace FractureHealing
         std::map<types::global_dof_index, double> boundary_values;
         params.bc.interpolate_boundary_values(dof_handler, boundary_values);
 
-        unsigned int i = 0;
+        unsigned int iter     = 0;
+        double       residual = 0;
 
         do
           {
@@ -639,11 +640,15 @@ namespace FractureHealing
             if (params.output.verbosity > 0)
               std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
           }
-        while (solve_ls() > params.ns.tol && ++i < params.ns.max_iter);
+        while ((residual = solve_ls()) > params.ns.tol &&
+               ++iter < params.ns.max_iter);
 
         constraints.distribute(solution);
 
         output_results();
+
+        AssertThrow(residual < params.ns.tol,
+                    ExcMessage("Nonlinear iterations have not converge."));
 
         if (time.step() % params.mr.n_steps == 0)
           {
