@@ -73,7 +73,6 @@ namespace FractureHealing
     void   output_results();
     void   make_mesh();
     bool   refine_mesh();
-    void   transfer_solution();
 
     Parameters<dim> &params;
     Time &           time;
@@ -528,27 +527,24 @@ namespace FractureHealing
 
     bool is_changed = triangulation.prepare_coarsening_and_refinement();
 
+    if (is_changed)
+      {
+        const Vector<double>  previous_solution = solution;
+        SolutionTransfer<dim> solution_trans(dof_handler);
+
+        solution_trans.prepare_for_coarsening_and_refinement(previous_solution);
+        triangulation.execute_coarsening_and_refinement();
+
+        setup_system();
+
+        solution_trans.interpolate(previous_solution, solution);
+        constraints.distribute(solution);
+      }
+
     if (params.output.verbosity > 0)
       std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
 
     return is_changed;
-  }
-
-
-
-  template <int dim>
-  void Solver<dim>::transfer_solution()
-  {
-    const Vector<double>  previous_solution = solution;
-    SolutionTransfer<dim> solution_trans(dof_handler);
-
-    solution_trans.prepare_for_coarsening_and_refinement(previous_solution);
-    triangulation.execute_coarsening_and_refinement();
-
-    setup_system();
-
-    solution_trans.interpolate(previous_solution, solution);
-    constraints.distribute(solution);
   }
 
 
@@ -650,11 +646,22 @@ namespace FractureHealing
         AssertThrow(residual < params.ns.tol,
                     ExcMessage("Nonlinear iterations have not converge."));
 
+        if (time.adaptive())
+          {
+            Vector<double> y(solution.size());
+            Vector<double> f(solution.size());
+
+            mass_matrix.vmult(y, solution);
+            matrix.vmult(f, solution);
+
+            time.update_delta(y.l2_norm(), f.l2_norm());
+            std::cout << "Next delta_t = " << time.delta() << std::endl;
+          }
+
         if (time.step() % params.mr.n_steps == 0)
           {
             if (refine_mesh())
               {
-                transfer_solution();
                 tmp.reinit(solution.size());
                 forcing_terms.reinit(solution.size());
                 assemble_rhs();

@@ -53,6 +53,12 @@ namespace FractureHealing
       return step_;
     }
 
+    //- Return true if the time step is adaptive
+    bool adaptive() const
+    {
+      return adaptive_;
+    }
+
     //- Increment the time
     void operator++()
     {
@@ -67,12 +73,21 @@ namespace FractureHealing
       return current_ <= end_;
     }
 
+    //- Update the time step size
+    void update_delta(double y, double f)
+    {
+      delta_ = (atol_ + rtol_ * y) / f;
+    }
+
   private:
     unsigned int step_;
     double       current_;
     double       end_;
     double       delta_;
     double       theta_;
+    bool         adaptive_;
+    double       atol_;
+    double       rtol_;
   };
 
 } // namespace FractureHealing

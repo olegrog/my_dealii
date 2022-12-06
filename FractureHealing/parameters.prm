@@ -70,8 +70,11 @@ end
 
 subsection Time
   set End time                      = 10
-  set Step size                     = 1e-2
+  set Step size                     = 1e-4
   set Theta                         = 0.5
+  set Adaptive                      = true
+  set Absolute change               = 1e-2
+  set Relative change               = 1e-2
 end
 
 subsection Finite elements
@@ -92,7 +95,7 @@ end
 subsection Linear solver
   set Max iterations                = 1000
   set Tolerance                     = 1e-8
-  set Reduce                        = 0.05
+  set Reduce                        = 1e-3
   set Preconditioner relaxation     = 1.0
 end
 
