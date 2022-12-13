@@ -23,6 +23,8 @@
 #include <deal.II/lac/dynamic_sparsity_pattern.h>
 #include <deal.II/lac/sparse_matrix.h>
 #include <deal.II/lac/solver_cg.h>
+#include <deal.II/lac/solver_bicgstab.h>
+#include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/precondition.h>
 #include <deal.II/lac/affine_constraints.h>
 
@@ -375,18 +377,27 @@ namespace FractureHealing
                                     params.ls.tol * system_rhs.l2_norm(),
                                     params.ls.reduce);
 
-    SolverCG<Vector<double>> cg(solver_control);
-
     PreconditionSSOR<SparseMatrix<double>> preconditioner;
     preconditioner.initialize(system_matrix, params.ls.preconditioner_relax);
 
-    cg.solve(system_matrix, solution, system_rhs, preconditioner);
+    if (params.ls.solver_name == "CG")
+      SolverCG(solver_control)
+        .solve(system_matrix, solution, system_rhs, preconditioner);
+    else if (params.ls.solver_name == "BiCGStab")
+      SolverBicgstab(solver_control)
+        .solve(system_matrix, solution, system_rhs, preconditioner);
+    else if (params.ls.solver_name == "GMRES")
+      SolverGMRES(solver_control)
+        .solve(system_matrix, solution, system_rhs, preconditioner);
+    else
+      AssertThrow(false, ExcNotImplemented());
+
 
     if (params.output.verbosity > 0)
       std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
 
-    std::cout << "     " << solver_control.last_step()
-              << " CG iterations: initial residual = "
+    std::cout << "     " << solver_control.last_step() << " "
+              << params.ls.solver_name << " iterations: initial residual = "
               << solver_control.initial_value() / system_rhs.l2_norm()
               << " final residual = "
               << solver_control.last_value() / system_rhs.l2_norm()
@@ -626,7 +637,7 @@ namespace FractureHealing
             system_matrix.add(time.theta() * time.delta(), matrix);
             constraints.condense(system_matrix);
 
-            // NB: last `false` makes matrix unsymmetric, but CG still works!
+            // NB: last `false` makes matrix unsymmetric
             MatrixTools::apply_boundary_values(boundary_values,
                                                system_matrix,
                                                solution,

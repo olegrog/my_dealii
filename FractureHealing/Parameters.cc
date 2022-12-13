@@ -338,6 +338,11 @@ namespace FractureHealing
   LinearSolver::LinearSolver()
     : ParameterAcceptor("Linear solver")
   {
+    add_parameter("Solver name",
+                  solver_name = "GMRES",
+                  "",
+                  prm,
+                  Patterns::Selection("CG|BiCGStab|GMRES"));
     add_parameter("Max iterations", max_iter = 100);
     add_parameter("Tolerance", tol = 1e-8);
     add_parameter("Reduce", reduce = 1e-2);

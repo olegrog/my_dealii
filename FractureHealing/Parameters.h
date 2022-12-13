@@ -129,6 +129,7 @@ namespace FractureHealing
   {
     LinearSolver();
 
+    std::string  solver_name;
     unsigned int max_iter;
     double       tol;
     double       reduce;
