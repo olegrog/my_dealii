@@ -583,6 +583,7 @@ namespace FractureHealing
 
     Vector<double> tmp;
     Vector<double> forcing_terms;
+    Vector<double> f_old;
 
     tmp.reinit(solution.size());
     forcing_terms.reinit(solution.size());
@@ -627,6 +628,7 @@ namespace FractureHealing
           {
             assemble_matrix();
 
+            {
             Timer timer;
             if (params.output.verbosity > 0)
               std::cout << " -- Assembling the system matrix... " << std::flush;
@@ -646,6 +648,22 @@ namespace FractureHealing
 
             if (params.output.verbosity > 0)
               std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
+             }
+
+            if (time.adaptive() && iter == 0)
+              {
+                TimerOutput::Scope t(computing_timer,
+                                     "Estimating time step size");
+
+                constraints.condense(matrix);
+                MatrixTools::apply_boundary_values(boundary_values,
+                                               matrix,
+                                               tmp,
+                                               tmp,
+                                               false);
+                f_old.reinit(solution.size());
+                matrix.vmult(f_old, solution);
+              }
           }
         while ((residual = solve_ls()) > params.ns.tol &&
                ++iter < params.ns.max_iter);
@@ -659,13 +677,17 @@ namespace FractureHealing
 
         if (time.adaptive())
           {
+            TimerOutput::Scope t(computing_timer, "Estimating time step size");
+
             Vector<double> y(solution.size());
             Vector<double> f(solution.size());
 
             mass_matrix.vmult(y, solution);
             matrix.vmult(f, solution);
+            f -= f_old;
 
-            time.update_delta(y.l2_norm(), f.l2_norm());
+            const double lambda = f.linfty_norm() / y.linfty_norm();
+            time.update_delta(lambda);
             std::cout << "Next delta_t = " << time.delta() << std::endl;
           }
 

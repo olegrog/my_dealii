@@ -25,8 +25,7 @@ namespace FractureHealing
     add_parameter("Step size", delta_ = 0.1);
     add_parameter("Theta", theta_ = 0.5);
     add_parameter("Adaptive", adaptive_ = false);
-    add_parameter("Absolute change", atol_ = 1e-2);
-    add_parameter("Relative change", rtol_ = 1e-2);
+    add_parameter("Tolerance", tol_ = 1e-2);
   }
 
 } // namespace FractureHealing

@@ -74,9 +74,9 @@ namespace FractureHealing
     }
 
     //- Update the time step size
-    void update_delta(double y, double f)
+    void update_delta(double lambda)
     {
-      delta_ = (atol_ + rtol_ * y) / f;
+      delta_ = tol_ / lambda;
     }
 
   private:
@@ -86,8 +86,7 @@ namespace FractureHealing
     double       delta_;
     double       theta_;
     bool         adaptive_;
-    double       atol_;
-    double       rtol_;
+    double       tol_;
   };
 
 } // namespace FractureHealing

@@ -70,11 +70,10 @@ end
 
 subsection Time
   set End time                      = 10
-  set Step size                     = 1e-4
+  set Step size                     = 1e-8
   set Theta                         = 0.5
   set Adaptive                      = true
-  set Absolute change               = 1e-2
-  set Relative change               = 1e-2
+  set Tolerance                     = 1e-1
 end
 
 subsection Finite elements
