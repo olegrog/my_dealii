@@ -74,9 +74,9 @@ namespace FractureHealing
     }
 
     //- Update the time step size
-    void update_delta(double lambda)
+    void update_delta(double residual_norm)
     {
-      delta_ = tol_ / lambda;
+      delta_ *= tol_ / residual_norm;
     }
 
   private:

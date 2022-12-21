@@ -583,7 +583,7 @@ namespace FractureHealing
 
     Vector<double> tmp;
     Vector<double> forcing_terms;
-    Vector<double> f_old;
+    Vector<double> old_solution;
 
     tmp.reinit(solution.size());
     forcing_terms.reinit(solution.size());
@@ -650,20 +650,7 @@ namespace FractureHealing
               std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
              }
 
-            if (time.adaptive() && iter == 0)
-              {
-                TimerOutput::Scope t(computing_timer,
-                                     "Estimating time step size");
-
-                constraints.condense(matrix);
-                MatrixTools::apply_boundary_values(boundary_values,
-                                               matrix,
-                                               tmp,
-                                               tmp,
-                                               false);
-                f_old.reinit(solution.size());
-                matrix.vmult(f_old, solution);
-              }
+            if (time.adaptive() && iter == 0) old_solution = solution;
           }
         while ((residual = solve_ls()) > params.ns.tol &&
                ++iter < params.ns.max_iter);
@@ -678,16 +665,9 @@ namespace FractureHealing
         if (time.adaptive())
           {
             TimerOutput::Scope t(computing_timer, "Estimating time step size");
-
-            Vector<double> y(solution.size());
-            Vector<double> f(solution.size());
-
-            mass_matrix.vmult(y, solution);
-            matrix.vmult(f, solution);
-            f -= f_old;
-
-            const double lambda = f.linfty_norm() / y.linfty_norm();
-            time.update_delta(lambda);
+            old_solution -= solution;
+            const double residual_norm = old_solution.linfty_norm() / solution.linfty_norm();
+            time.update_delta(residual_norm);
             std::cout << "Next delta_t = " << time.delta() << std::endl;
           }
 

@@ -73,7 +73,7 @@ subsection Time
   set Step size                     = 1e-8
   set Theta                         = 0.5
   set Adaptive                      = true
-  set Tolerance                     = 1e-1
+  set Tolerance                     = 1e-2
 end
 
 subsection Finite elements
