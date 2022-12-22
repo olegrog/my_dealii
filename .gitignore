@@ -24,6 +24,9 @@ _*
 log*
 callgrind*
 
+# Meshes
+*.msh
+
 # Graphics
 *.pdf
 *.eps

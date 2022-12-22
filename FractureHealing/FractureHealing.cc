@@ -32,6 +32,7 @@
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_refinement.h>
 #include <deal.II/grid/grid_out.h>
+#include <deal.II/grid/grid_in.h>
 
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_renumbering.h>
@@ -458,14 +459,12 @@ namespace FractureHealing
       std::cout << " -- Making a mesh... " << std::flush;
     TimerOutput::Scope t(computing_timer, "Making a mesh");
 
-    const Geometry<dim> &geo     = params.geometry;
     const unsigned int   n_steps = params.mr.j_max - params.mr.j_min;
 
-    GridGenerator::subdivided_hyper_L(triangulation,
-                                      geo.repetitions,
-                                      Point<dim>(),
-                                      geo.size,
-                                      geo.n_cells_to_remove);
+    GridIn<2> gridin;
+    gridin.attach_triangulation(triangulation);
+    std::ifstream file(params.mr.filename);
+    gridin.read_msh(file);
     triangulation.refine_global(params.mr.j_min);
 
     // Adapt mesh to the initial values

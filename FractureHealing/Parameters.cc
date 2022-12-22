@@ -171,17 +171,6 @@ namespace FractureHealing
 
 
   template <int dim>
-  Geometry<dim>::Geometry()
-    : ParameterAcceptor("Geometry")
-  {
-    add_parameter("Size", size);
-    add_parameter("Repetitions", repetitions);
-    add_parameter("Cells to remove", n_cells_to_remove);
-  }
-
-
-
-  template <int dim>
   InitialValues<dim>::InitialValues()
     : ParameterAcceptor("Initial values")
     , FunctionParser<dim>(Model::n_components)
@@ -324,6 +313,7 @@ namespace FractureHealing
   MeshRefinement::MeshRefinement()
     : ParameterAcceptor("Mesh refinement")
   {
+    add_parameter("Initial mesh file", filename = "fracture.msh");
     add_parameter("Minimum level", j_min = 3);
     add_parameter("Maximum level", j_max = 5);
     add_parameter("Number of time steps", n_steps = 1);
@@ -384,7 +374,6 @@ namespace FractureHealing
 
 
 
-  template class Geometry<2>;
   template class InitialValues<2>;
   template class BoundaryValues<2>;
 

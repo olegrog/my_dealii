@@ -48,16 +48,6 @@ namespace FractureHealing
   };
 
   template <int dim>
-  struct Geometry : ParameterAcceptor
-  {
-    Geometry();
-
-    std::vector<unsigned int> repetitions;
-    Point<dim>                size;
-    std::vector<int>          n_cells_to_remove;
-  };
-
-  template <int dim>
   struct InitialValues : ParameterAcceptor, FunctionParser<dim>
   {
     InitialValues();
@@ -116,6 +106,7 @@ namespace FractureHealing
   {
     MeshRefinement();
 
+    std::string  filename;
     unsigned int j_min;
     unsigned int j_max;
     unsigned int n_steps;
@@ -163,7 +154,6 @@ namespace FractureHealing
   struct Parameters
   {
     Model               model;
-    Geometry<dim>       geometry;
     InitialValues<dim>  ic;
     BoundaryValues<dim> bc;
     FiniteElements      fe;
