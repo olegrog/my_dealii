@@ -73,7 +73,8 @@ namespace FractureHealing
 
     void interpolate_boundary_values(
       const DoFHandler<dim> &                    dof_handler,
-      std::map<types::global_dof_index, double> &boundary_values) const;
+      std::map<types::global_dof_index, double> &boundary_values,
+      const double                               time);
 
   private:
     struct Boundary
@@ -87,7 +88,7 @@ namespace FractureHealing
       const ComponentMask       component_mask;
     };
 
-    std::map<types::boundary_id, Boundary> boundaries;
+    std::map<types::boundary_id, Boundary> boundaries_;
 
     std::string subsection(types::boundary_id id) const
     {
@@ -171,7 +172,7 @@ namespace FractureHealing
   BoundaryValues<dim>::get_id(const Point<dim> &point) const
   {
     types::boundary_id id = max_n_boundaries;
-    for (const auto &[boundary_id, boundary] : boundaries)
+    for (const auto &[boundary_id, boundary] : boundaries_)
       if (boundary.location.value(point))
         {
           Assert(id == max_n_boundaries,

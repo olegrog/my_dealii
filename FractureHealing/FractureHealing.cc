@@ -631,7 +631,9 @@ namespace FractureHealing
 
         // Boundary conditions
         std::map<types::global_dof_index, double> boundary_values;
-        params.bc.interpolate_boundary_values(dof_handler, boundary_values);
+        params.bc.interpolate_boundary_values(dof_handler,
+                                              boundary_values,
+                                              time());
 
         unsigned int iter     = 0;
         double       residual = 0;

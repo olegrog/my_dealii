@@ -42,23 +42,28 @@ end
 
 subsection Initial values
   set Project functions             = false
-  set Mesenchymal cellular density  = 0.5 + 0.5*((x/1.4)^2 + (y/0.9)^2 < 1)
+  set Mesenchymal cellular density  = 0
   set Chondrocytes cellular density = 0
   set Osteoblasts cellular density  = 0
   set Cartilage ECM density         = 0.1
   set Bone ECM density              = 0
   set Chondrogenic GF density       = 20
-  set Osteogenic GF density         = 20
+  set Osteogenic GF density         = 0
 end
 
 subsection Boundary values
   subsection Boundary_1 # Fracture
     set Location                    = (y < 0) && (abs(x-0.2) < 1e-10)
-    set Chondrogenic GF density     = 20
+    set Chondrogenic GF density     = 20*(t < 10)
   end
   subsection Boundary_2 # Periosteum
     set Location                    = (x > 0.4) && (abs(y) < 1e-10)
-    set Osteogenic GF density       = 20
+    set Mesenchymal cellular density = 1*(t < 1)
+    set Osteogenic GF density       = 20*(t < 1)
+  end
+  subsection Boundary_3 # Surroundings
+    set Location                    = (x > 0) && (y > 0)
+    set Mesenchymal cellular density = 0.5*(t < 1)
   end
 end
 
@@ -67,7 +72,7 @@ subsection Time
   set Step size                     = 1e-8
   set Theta                         = 0.5
   set Adaptive                      = true
-  set Tolerance                     = 1e-2
+  set Tolerance                     = 1e-1
 end
 
 subsection Finite elements

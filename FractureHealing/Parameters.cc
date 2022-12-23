@@ -239,7 +239,7 @@ namespace FractureHealing
         std::vector<std::string> expressions;
         std::vector<bool>        cmask;
 
-        for (auto component : Model::component_names)
+        for (const auto component : Model::component_names)
           {
             const std::string expression = prm.get(component);
             if (expression == "none")
@@ -257,11 +257,11 @@ namespace FractureHealing
           }
 
         if (std::find(begin(cmask), end(cmask), true) != end(cmask))
-          boundaries.emplace(std::piecewise_construct,
-                             std::forward_as_tuple(b),
-                             std::forward_as_tuple(prm.get("Location"),
-                                                   expressions,
-                                                   cmask));
+          boundaries_.emplace(std::piecewise_construct,
+                              std::forward_as_tuple(b),
+                              std::forward_as_tuple(prm.get("Location"),
+                                                    expressions,
+                                                    cmask));
         prm.leave_subsection();
       }
   }
@@ -271,14 +271,18 @@ namespace FractureHealing
   template <int dim>
   void BoundaryValues<dim>::interpolate_boundary_values(
     const DoFHandler<dim> &                    dof_handler,
-    std::map<types::global_dof_index, double> &boundary_values) const
+    std::map<types::global_dof_index, double> &boundary_values,
+    const double                               time)
   {
-    for (const auto &[boundary_id, boundary] : boundaries)
-      VectorTools::interpolate_boundary_values(dof_handler,
-                                               boundary_id,
-                                               boundary.values,
-                                               boundary_values,
-                                               boundary.component_mask);
+    for (auto &[boundary_id, boundary] : boundaries_)
+      {
+        boundary.values.set_time(time);
+        VectorTools::interpolate_boundary_values(dof_handler,
+                                                 boundary_id,
+                                                 boundary.values,
+                                                 boundary_values,
+                                                 boundary.component_mask);
+      }
   }
 
 
@@ -294,9 +298,10 @@ namespace FractureHealing
     , values(Model::n_components)
     , component_mask(cmask)
   {
-    values.initialize(FunctionParser<dim>::default_variable_names(),
+    values.initialize(FunctionParser<dim>::default_variable_names() + ",t",
                       value_expressions,
-                      typename FunctionParser<dim>::ConstMap());
+                      typename FunctionParser<dim>::ConstMap(),
+                      /* time_dependent = */ true);
   }
 
 
