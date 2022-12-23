@@ -173,8 +173,8 @@ namespace FractureHealing
               face->set_boundary_id(id);
             }
 
-      for (auto [key, value] : id_faces)
-        if (key < Model::n_components)
+      for (const auto [key, value] : id_faces)
+        if (key < BoundaryValues<dim>::max_n_boundaries)
           std::cout << "Boundary #" << key << " contains " << value << " faces"
                     << std::endl;
         else
@@ -459,7 +459,7 @@ namespace FractureHealing
       std::cout << " -- Making a mesh... " << std::flush;
     TimerOutput::Scope t(computing_timer, "Making a mesh");
 
-    const unsigned int   n_steps = params.mr.j_max - params.mr.j_min;
+    const unsigned int n_steps = params.mr.j_max - params.mr.j_min;
 
     GridIn<2> gridin;
     gridin.attach_triangulation(triangulation);
@@ -467,33 +467,46 @@ namespace FractureHealing
     gridin.read_msh(file);
     triangulation.refine_global(params.mr.j_min);
 
-    // Adapt mesh to the initial values
     for (unsigned int step = 0; step < n_steps; ++step)
       {
-        std::cout << "Number of active cells: "
+        std::cout << "Number of active cells after " << step
+                  << " steps of initial mesh adaptation: "
                   << triangulation.n_active_cells() << std::endl;
 
-        dof_handler.distribute_dofs(fe);
-        solution.reinit(dof_handler.n_dofs());
-        VectorTools::interpolate(dof_handler, params.ic, solution);
+        // Adapt mesh to jumps in the initial values
+        if (params.mr.adapt_to_ic)
+          {
+            dof_handler.distribute_dofs(fe);
+            solution.reinit(dof_handler.n_dofs());
+            VectorTools::interpolate(dof_handler, params.ic, solution);
 
-        Vector<float> gradient_indicator(triangulation.n_active_cells());
+            Vector<float> gradient_indicator(triangulation.n_active_cells());
 
-        DerivativeApproximation::approximate_gradient(dof_handler,
-                                                      solution,
-                                                      gradient_indicator);
+            DerivativeApproximation::approximate_gradient(dof_handler,
+                                                          solution,
+                                                          gradient_indicator);
 
-        unsigned int cell_no = 0;
-        for (const auto &cell : dof_handler.active_cell_iterators())
-          gradient_indicator(cell_no++) *=
-            std::pow(cell->diameter(), 1 + dim / 2.);
+            unsigned int cell_no = 0;
+            for (const auto &cell : dof_handler.active_cell_iterators())
+              gradient_indicator(cell_no++) *=
+                std::pow(cell->diameter(), 1 + dim / 2.);
 
-        GridRefinement::refine_and_coarsen_fixed_fraction(
-          triangulation,
-          gradient_indicator,
-          params.mr.ic_upper,
-          0,
-          params.mr.max_n_cells);
+            GridRefinement::refine_and_coarsen_fixed_fraction(
+              triangulation,
+              gradient_indicator,
+              params.mr.ic_upper,
+              0,
+              params.mr.max_n_cells);
+          }
+
+        // Adapt mesh near the boundaries with Dirichlet BC
+        if (params.mr.adapt_to_bc && dim < 3)
+          for (auto &cell : triangulation.active_cell_iterators())
+            for (const auto &face : cell->face_iterators())
+              if (face->at_boundary())
+                if (params.bc.get_id(face->center()) <
+                    BoundaryValues<dim>::max_n_boundaries)
+                  cell->set_refine_flag();
 
         triangulation.execute_coarsening_and_refinement();
       }
@@ -627,7 +640,6 @@ namespace FractureHealing
           {
             assemble_matrix();
 
-            {
             Timer timer;
             if (params.output.verbosity > 0)
               std::cout << " -- Assembling the system matrix... " << std::flush;
@@ -647,9 +659,9 @@ namespace FractureHealing
 
             if (params.output.verbosity > 0)
               std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
-             }
 
-            if (time.adaptive() && iter == 0) old_solution = solution;
+            if (time.adaptive() && iter == 0)
+              old_solution = solution;
           }
         while ((residual = solve_ls()) > params.ns.tol &&
                ++iter < params.ns.max_iter);
@@ -665,7 +677,8 @@ namespace FractureHealing
           {
             TimerOutput::Scope t(computing_timer, "Estimating time step size");
             old_solution -= solution;
-            const double residual_norm = old_solution.linfty_norm() / solution.linfty_norm();
+            const double residual_norm =
+              old_solution.linfty_norm() / solution.linfty_norm();
             time.update_delta(residual_norm);
             std::cout << "Next delta_t = " << time.delta() << std::endl;
           }

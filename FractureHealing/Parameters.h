@@ -62,6 +62,8 @@ namespace FractureHealing
   class BoundaryValues : ParameterAcceptor
   {
   public:
+    static constexpr unsigned int max_n_boundaries = 10;
+
     BoundaryValues();
 
     void declare_parameters(ParameterHandler &prm) override;
@@ -85,7 +87,6 @@ namespace FractureHealing
       const ComponentMask       component_mask;
     };
 
-    static constexpr unsigned int          max_n_boundaries = 10;
     std::map<types::boundary_id, Boundary> boundaries;
 
     std::string subsection(types::boundary_id id) const
@@ -110,10 +111,12 @@ namespace FractureHealing
     unsigned int j_min;
     unsigned int j_max;
     unsigned int n_steps;
-    double       ic_upper;
     double       upper;
     double       lower;
     double       max_n_cells;
+    bool         adapt_to_ic;
+    bool         adapt_to_bc;
+    double       ic_upper;
   };
 
   struct LinearSolver : ParameterAcceptor

@@ -317,10 +317,12 @@ namespace FractureHealing
     add_parameter("Minimum level", j_min = 3);
     add_parameter("Maximum level", j_max = 5);
     add_parameter("Number of time steps", n_steps = 1);
-    add_parameter("IC refining threshold", ic_upper = 0.99);
     add_parameter("Refining threshold", upper = 0.5);
     add_parameter("Coarsening threshold", lower = 0.1);
     add_parameter("Maximum number of cells", max_n_cells = 5000);
+    add_parameter("Adapt to IC", adapt_to_ic = true);
+    add_parameter("Adapt to BC", adapt_to_bc = true);
+    add_parameter("IC refining threshold", ic_upper = 0.99);
   }
 
 

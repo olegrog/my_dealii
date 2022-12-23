@@ -558,15 +558,11 @@ namespace ThermalDebinding
         for (auto &cell : triangulation.active_cell_iterators())
           {
             RefinementCase<dim> rf = RefinementCase<dim>::no_refinement;
-            for (const auto face_no : cell->face_indices())
-              {
-                const auto &face = cell->face(face_no);
-                if (face->at_boundary())
-                  for (int i = 0; i < dim; ++i)
-                    if (std::fabs(cell->center()[i] - face->center()[i]) >
-                        small)
-                      rf = rf | RefinementCase<dim>::cut_axis(i);
-              }
+            for (const auto &face : cell->face_iterators())
+              if (face->at_boundary())
+                for (int i = 0; i < dim; ++i)
+                  if (std::fabs(cell->center()[i] - face->center()[i]) > small)
+                    rf = rf | RefinementCase<dim>::cut_axis(i);
             cell->set_refine_flag(rf);
           }
 
