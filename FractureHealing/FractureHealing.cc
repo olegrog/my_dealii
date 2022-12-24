@@ -199,8 +199,9 @@ namespace FractureHealing
     matrix.reinit(sparsity_pattern);
     system_matrix.reinit(sparsity_pattern);
 
+    // NB: Gauss-Lobatto rule is used to ensure that the mass matrix is diagonal
     MatrixCreator::create_mass_matrix(dof_handler,
-                                      QGauss<dim>(fe.degree + 1),
+                                      QGaussLobatto<dim>(fe.degree + 1),
                                       mass_matrix);
 
     solution.reinit(dof_handler.n_dofs());

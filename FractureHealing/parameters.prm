@@ -47,7 +47,7 @@ subsection Initial values
   set Osteoblasts cellular density  = 0
   set Cartilage ECM density         = 0.1
   set Bone ECM density              = 0
-  set Chondrogenic GF density       = 20
+  set Chondrogenic GF density       = 0
   set Osteogenic GF density         = 0
 end
 
@@ -58,7 +58,6 @@ subsection Boundary values
   end
   subsection Boundary_2 # Periosteum
     set Location                    = (x > 0.4) && (abs(y) < 1e-10)
-    set Mesenchymal cellular density = 1*(t < 1)
     set Osteogenic GF density       = 20*(t < 1)
   end
   subsection Boundary_3 # Surroundings
@@ -72,7 +71,7 @@ subsection Time
   set Step size                     = 1e-8
   set Theta                         = 0.5
   set Adaptive                      = true
-  set Tolerance                     = 1e-1
+  set Tolerance                     = 5e-2
 end
 
 subsection Finite elements
@@ -110,6 +109,6 @@ subsection Output
   set Write mesh                    = false
   set Number of time steps          = 1
   set Log verbosity                 = 0
-  set Profiling                     = true
+  set Profiling                     = false
 end
 
