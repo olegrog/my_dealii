@@ -417,9 +417,6 @@ namespace FractureHealing
     if (!params.output.write_vtk_files)
       return;
 
-    if (time.step() % params.output.n_steps != 0)
-      return;
-
     Timer timer;
     if (params.output.verbosity > 0)
       std::cout << " -- Writing results... " << std::flush;
@@ -443,7 +440,7 @@ namespace FractureHealing
     data_out.set_flags(output_flags);
 
     const std::string filename =
-      "solution-" + Utilities::int_to_string(time.step(), 3) + ".vtu";
+      "solution-" + Utilities::int_to_string(time.output_index(), 3) + ".vtu";
     std::ofstream output(filename);
     data_out.write_vtu(output);
 
@@ -671,7 +668,8 @@ namespace FractureHealing
 
         constraints.distribute(solution);
 
-        output_results();
+        if (time.output_time())
+          output_results();
 
         AssertThrow(residual < params.ns.tol,
                     ExcMessage("Nonlinear iterations have not converge."));

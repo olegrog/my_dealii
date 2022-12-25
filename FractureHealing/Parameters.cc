@@ -378,7 +378,6 @@ namespace FractureHealing
                   "",
                   ParameterAcceptor::prm,
                   Patterns::Selection(GridOut::get_output_format_names()));
-    add_parameter("Number of time steps", n_steps = 1);
     add_parameter("Log verbosity", verbosity = 0);
     add_parameter("Profiling", profiling = false);
   }

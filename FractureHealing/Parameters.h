@@ -153,7 +153,6 @@ namespace FractureHealing
     bool                  write_mesh;
     std::string           mesh_format_str;
     GridOut::OutputFormat mesh_format;
-    unsigned int          n_steps;
     unsigned int          verbosity;
     bool                  profiling;
   };

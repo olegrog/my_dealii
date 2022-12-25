@@ -59,11 +59,16 @@ namespace FractureHealing
       return adaptive_;
     }
 
-    //- Increment the time
-    void operator++()
+    //- Return true if it is a time to output the results
+    bool output_time() const
     {
-      current_ += delta_;
-      ++step_;
+      return output_time_;
+    }
+
+    //- Return true if it is a time to output the results
+    unsigned int output_index() const
+    {
+      return output_index_;
     }
 
     //- Increment the time and check if the end time is reached
@@ -73,18 +78,22 @@ namespace FractureHealing
       return current_ <= end_;
     }
 
+    //- Advance the time
+    void operator++();
+
     //- Update the time step size
-    void update_delta(double residual_norm)
-    {
-      delta_ *= tol_ / residual_norm;
-    }
+    void update_delta(double residual_norm);
 
   private:
     unsigned int step_;
+    unsigned int output_index_;
     double       current_;
     double       end_;
     double       delta_;
     double       theta_;
+    double       time_for_output_;
+    unsigned int n_steps_for_output_;
+    bool         output_time_;
     bool         adaptive_;
     double       tol_;
   };

@@ -73,6 +73,8 @@ subsection Time
   set End time                      = 10
   set Step size                     = 1e-8
   set Theta                         = 0.5
+  set Time interval for output      = 0.1
+  set Iteration interval for output = 1
   set Adaptive                      = true
   set Tolerance                     = 5e-2
 end
@@ -110,7 +112,6 @@ end
 subsection Output
   set Write VTK files               = true
   set Write mesh                    = false
-  set Number of time steps          = 1
   set Log verbosity                 = 0
   set Profiling                     = false
 end
