@@ -70,6 +70,7 @@ namespace FractureHealing
 
   private:
     void   setup_system();
+    void   set_boundary_ids();
     void   assemble_rhs();
     void   assemble_matrix();
     double solve_ls();
@@ -160,30 +161,6 @@ namespace FractureHealing
       std::cout << " -- Setting up system... " << std::flush;
     TimerOutput::Scope t(computing_timer, "Setting up system");
 
-    {
-      std::map<types::boundary_id, unsigned int> id_faces;
-
-      // NB: loop over all the cells, not only active
-      for (auto &cell : triangulation.cell_iterators())
-        for (auto &face : cell->face_iterators())
-          if (face->at_boundary())
-            {
-              const types::boundary_id id = params.bc.get_id(face->center());
-              id_faces[id]++;
-              face->set_boundary_id(id);
-            }
-
-      for (const auto [key, value] : id_faces)
-        if (key < BoundaryValues<dim>::max_n_boundaries)
-          std::cout << "Boundary #" << key << " contains " << value << " faces"
-                    << std::endl;
-        else
-          std::cout << "Number of faces without specified BC: " << value
-                    << std::endl;
-
-      std::cout << std::endl;
-    }
-
     constraints.clear();
     DoFTools::make_hanging_node_constraints(dof_handler, constraints);
     constraints.close();
@@ -227,6 +204,30 @@ namespace FractureHealing
   }
 
 
+
+  template <int dim>
+  void Solver<dim>::set_boundary_ids()
+  {
+    std::map<types::boundary_id, unsigned int> id_faces;
+
+    // NB: loop over all the cells, not only active
+    for (auto &cell : triangulation.cell_iterators())
+      for (auto &face : cell->face_iterators())
+        if (face->at_boundary())
+          {
+            const types::boundary_id id = params.bc.get_id(face->center());
+            id_faces[id]++;
+            face->set_boundary_id(id);
+          }
+
+    for (const auto [id, n_faces] : id_faces)
+      if (id < BoundaryValues<dim>::max_n_boundaries)
+        std::cout << "Number of faces at " << params.bc.get_name(id)
+                  << " boundary: " << n_faces << std::endl;
+      else
+        std::cout << "Number of faces with zero gradient BC: " << n_faces
+                  << std::endl;
+  }
 
   template <int dim>
   void Solver<dim>::assemble_rhs()
@@ -603,10 +604,11 @@ namespace FractureHealing
 
     while (time.loop())
       {
+        params.bc.set_time(time());
+        set_boundary_ids();
+
         std::cout << "Time step " << time.step() << " at t=" << time()
                   << std::endl;
-
-        computing_timer.reset();
 
         old_rhs = rhs;
         assemble_rhs();
@@ -632,9 +634,7 @@ namespace FractureHealing
 
         // Boundary conditions
         std::map<types::global_dof_index, double> boundary_values;
-        params.bc.interpolate_boundary_values(dof_handler,
-                                              boundary_values,
-                                              time());
+        params.bc.interpolate_boundary_values(dof_handler, boundary_values);
 
         unsigned int iter     = 0;
         double       residual = 0;
@@ -676,6 +676,12 @@ namespace FractureHealing
         AssertThrow(residual < params.ns.tol,
                     ExcMessage("Nonlinear iterations have not converge."));
 
+        if (params.output.profiling)
+          {
+            computing_timer.print_summary();
+            computing_timer.reset();
+          }
+
         if (time.adaptive())
           {
             TimerOutput::Scope t(computing_timer, "Estimating time step size");
@@ -695,9 +701,6 @@ namespace FractureHealing
                 assemble_rhs();
               }
           }
-
-        if (params.output.profiling)
-          computing_timer.print_summary();
       }
   }
 } // namespace FractureHealing

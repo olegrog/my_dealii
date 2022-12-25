@@ -219,6 +219,7 @@ namespace FractureHealing
       {
         prm.enter_subsection(subsection(b));
         {
+          prm.declare_entry("Name", Utilities::int_to_string(b));
           prm.declare_entry("Location", "0");
           for (auto component : Model::component_names)
             prm.declare_entry(component, "none");
@@ -259,7 +260,8 @@ namespace FractureHealing
         if (std::find(begin(cmask), end(cmask), true) != end(cmask))
           boundaries_.emplace(std::piecewise_construct,
                               std::forward_as_tuple(b),
-                              std::forward_as_tuple(prm.get("Location"),
+                              std::forward_as_tuple(prm.get("Name"),
+                                                    prm.get("Location"),
                                                     expressions,
                                                     cmask));
         prm.leave_subsection();
@@ -269,32 +271,41 @@ namespace FractureHealing
 
 
   template <int dim>
-  void BoundaryValues<dim>::interpolate_boundary_values(
-    const DoFHandler<dim> &                    dof_handler,
-    std::map<types::global_dof_index, double> &boundary_values,
-    const double                               time)
+  void BoundaryValues<dim>::set_time(const double time)
   {
     for (auto &[boundary_id, boundary] : boundaries_)
       {
+        boundary.location.set_time(time);
         boundary.values.set_time(time);
-        VectorTools::interpolate_boundary_values(dof_handler,
-                                                 boundary_id,
-                                                 boundary.values,
-                                                 boundary_values,
-                                                 boundary.component_mask);
       }
+  }
+
+
+  template <int dim>
+  void BoundaryValues<dim>::interpolate_boundary_values(
+    const DoFHandler<dim> &                    dof_handler,
+    std::map<types::global_dof_index, double> &boundary_values) const
+  {
+    for (auto &[boundary_id, boundary] : boundaries_)
+      VectorTools::interpolate_boundary_values(dof_handler,
+                                               boundary_id,
+                                               boundary.values,
+                                               boundary_values,
+                                               boundary.component_mask);
   }
 
 
 
   template <int dim>
   BoundaryValues<dim>::Boundary::Boundary(
+    const std::string &             boundary_name,
     const std::string &             location_expression,
     const std::vector<std::string> &value_expressions,
     const std::vector<bool> &       cmask)
-    : location(location_expression,
+    : name(boundary_name)
+    , location(location_expression,
                "",
-               FunctionParser<dim>::default_variable_names())
+               FunctionParser<dim>::default_variable_names() + ",t")
     , values(Model::n_components)
     , component_mask(cmask)
   {

@@ -69,23 +69,27 @@ namespace FractureHealing
     void declare_parameters(ParameterHandler &prm) override;
     void parse_parameters(ParameterHandler &prm) override;
 
+    void set_time(const double time);
+
     types::boundary_id get_id(const Point<dim> &point) const;
+    const std::string &get_name(const types::boundary_id id) const;
 
     void interpolate_boundary_values(
       const DoFHandler<dim> &                    dof_handler,
-      std::map<types::global_dof_index, double> &boundary_values,
-      const double                               time);
+      std::map<types::global_dof_index, double> &boundary_values) const;
 
   private:
     struct Boundary
     {
-      Boundary(const std::string &             location_expression,
+      Boundary(const std::string &             boundary_name,
+               const std::string &             location_expression,
                const std::vector<std::string> &value_expressions,
                const std::vector<bool> &       cmask);
 
-      const FunctionParser<dim> location;
-      FunctionParser<dim>       values;
-      const ComponentMask       component_mask;
+      const std::string   name;
+      FunctionParser<dim> location;
+      FunctionParser<dim> values;
+      const ComponentMask component_mask;
     };
 
     std::map<types::boundary_id, Boundary> boundaries_;
@@ -180,6 +184,16 @@ namespace FractureHealing
           id = boundary_id;
         }
     return id;
+  }
+
+  template <int dim>
+  inline const std::string &
+  BoundaryValues<dim>::get_name(const types::boundary_id id) const
+  {
+    if (auto search = boundaries_.find(id); search != boundaries_.end())
+      return search->second.name;
+    else
+      AssertThrow(false, ExcMessage("Wrong boundary ID!"));
   }
 
 } // namespace FractureHealing

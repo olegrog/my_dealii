@@ -52,17 +52,20 @@ subsection Initial values
 end
 
 subsection Boundary values
-  subsection Boundary_1 # Fracture
-    set Location                    = (y < 0) && (abs(x-0.2) < 1e-10)
-    set Chondrogenic GF density     = 20*(t < 10)
+  subsection Boundary_1
+    set Name                        = Fracture
+    set Location                    = (y < 0) && (abs(x-0.2) < 1e-10) && (t < 10)
+    set Chondrogenic GF density     = 20
   end
-  subsection Boundary_2 # Periosteum
-    set Location                    = (x > 0.4) && (abs(y) < 1e-10)
-    set Osteogenic GF density       = 20*(t < 1)
+  subsection Boundary_2
+    set Name                        = Periosteum
+    set Location                    = (x > 0.4) && (abs(y) < 1e-10) && (t < 10)
+    set Osteogenic GF density       = 20
   end
-  subsection Boundary_3 # Surroundings
-    set Location                    = (x > 0) && (y > 0)
-    set Mesenchymal cellular density = 0.5*(t < 1)
+  subsection Boundary_3
+    set Name                        = Surroundings
+    set Location                    = (x > 0) && (y > 0) && (t < 1)
+    set Mesenchymal cellular density = 0.5
   end
 end
 
