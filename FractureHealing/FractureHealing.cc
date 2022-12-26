@@ -593,7 +593,8 @@ namespace FractureHealing
       QGauss<dim - 1>(fe.degree + 1),
       std::map<types::boundary_id, const Function<dim> *>(),
       solution,
-      estimated_error_per_cell);
+      estimated_error_per_cell,
+      params.mr.component_mask);
 
     GridRefinement::refine_and_coarsen_fixed_fraction(triangulation,
                                                       estimated_error_per_cell,

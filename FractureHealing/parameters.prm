@@ -93,6 +93,7 @@ subsection Mesh refinement
   set Refining threshold            = 0.5
   set Coarsening threshold          = 0.1
   set Maximum number of cells       = 5000
+  set Component mask                = true,false,false,false,false,true,true
   set Adapt to IC                   = true
   set Adapt to BC                   = true
   set IC refining threshold         = 0.999

@@ -112,16 +112,17 @@ namespace FractureHealing
   {
     MeshRefinement();
 
-    std::string  filename;
-    unsigned int j_min;
-    unsigned int j_max;
-    unsigned int n_steps;
-    double       upper;
-    double       lower;
-    double       max_n_cells;
-    bool         adapt_to_ic;
-    bool         adapt_to_bc;
-    double       ic_upper;
+    std::string   filename;
+    unsigned int  j_min;
+    unsigned int  j_max;
+    unsigned int  n_steps;
+    double        upper;
+    double        lower;
+    double        max_n_cells;
+    ComponentMask component_mask;
+    bool          adapt_to_ic;
+    bool          adapt_to_bc;
+    double        ic_upper;
   };
 
   struct LinearSolver : ParameterAcceptor
