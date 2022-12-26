@@ -29,8 +29,8 @@ subsection Model
   set Cartilage degradation 1       = 0.2
   set Cartilage degradation 2       = 2
   set Bone degradation              = 2
-  set Chondrogenic GF diffusion     = 0.005
-  set Osteogenic GF diffusion       = 0.005
+  set Chondrogenic GF diffusion     = 0.05 #0.005
+  set Osteogenic GF diffusion       = 0.05 #0.005
   set Chondrogenic GF growth        = 50
   set Chondrogenic GF growth H      = 1
   set Chondrogenic GF growth K      = 0.1
@@ -77,21 +77,21 @@ subsection Time
   set Time interval for output      = 0.1
   set Iteration interval for output = 1
   set Adaptive                      = true
-  set Tolerance                     = 5e-2
+  set Tolerance                     = 1e-1
 end
 
 subsection Finite elements
-  set Polynomial degree             = 1
+  set Polynomial degree             = 2
   set Renumbering                   = true
 end
 
 subsection Mesh refinement
   set Initial mesh file             = fracture.msh
-  set Minimum level                 = 1
-  set Maximum level                 = 3
+  set Minimum level                 = 0
+  set Maximum level                 = 4
   set Number of time steps          = 1
   set Refining threshold            = 0.5
-  set Coarsening threshold          = 0.1
+  set Coarsening threshold          = 0.05
   set Maximum number of cells       = 5000
   set Component mask                = true,false,false,false,false,true,true
   set Adapt to IC                   = true
@@ -107,7 +107,7 @@ subsection Linear solver
 end
 
 subsection Nonlinear solver
-  set Max iterations                = 15
+  set Max iterations                = 30
   set Tolerance                     = 1e-7
 end
 
