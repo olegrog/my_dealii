@@ -72,6 +72,7 @@ end
 subsection Time
   set End time                      = 10
   set Step size                     = 1e-8
+  set Max step size                 = 1e-2
   set Theta                         = 0.5
   set Time interval for output      = 0.1
   set Iteration interval for output = 1

@@ -25,6 +25,7 @@ namespace FractureHealing
   {
     add_parameter("End time", end_ = 1);
     add_parameter("Step size", delta_ = 0.01);
+    add_parameter("Max step size", max_delta_ = 0.01);
     add_parameter("Theta", theta_ = 0.5);
     add_parameter("Time interval for output", time_for_output_ = 0.1);
     add_parameter("Iteration interval for output", n_steps_for_output_ = 1);
@@ -61,6 +62,7 @@ namespace FractureHealing
   void Time::update_delta(double residual_norm)
   {
     delta_ *= tol_ / residual_norm;
+    delta_ = std::min(delta_, max_delta_);
 
     // Adjust time step size to the output time interval
     if (time_for_output_ > 0)

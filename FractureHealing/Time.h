@@ -90,6 +90,7 @@ namespace FractureHealing
     double       current_;
     double       end_;
     double       delta_;
+    double       max_delta_;
     double       theta_;
     double       time_for_output_;
     unsigned int n_steps_for_output_;
