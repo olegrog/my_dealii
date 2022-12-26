@@ -154,6 +154,8 @@ namespace FractureHealing
     std::string           mesh_format_str;
     GridOut::OutputFormat mesh_format;
     unsigned int          verbosity;
+    bool                  integral_values;
+    std::string           integral_values_file;
     bool                  profiling;
   };
 

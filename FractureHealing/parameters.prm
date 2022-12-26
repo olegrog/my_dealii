@@ -114,6 +114,8 @@ subsection Output
   set Write VTK files               = true
   set Write mesh                    = false
   set Log verbosity                 = 0
+  set Compute integral values       = true
+  set Integral values file          = integral_values.dat
   set Profiling                     = false
 end
 

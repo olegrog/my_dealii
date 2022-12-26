@@ -453,10 +453,10 @@ namespace ThermalDebinding
     organicRelativeMass +=
       material.polymerVolumeFraction() / material.initialPolymerFraction();
 
+    std::cout << "organicRelativeMass = " << organicRelativeMass << std::endl;
+
     if (params.output.verbosity > 0)
       std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
-
-    std::cout << "organicRelativeMass = " << organicRelativeMass << std::endl;
   }
 
 

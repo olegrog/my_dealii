@@ -379,6 +379,9 @@ namespace FractureHealing
                   ParameterAcceptor::prm,
                   Patterns::Selection(GridOut::get_output_format_names()));
     add_parameter("Log verbosity", verbosity = 0);
+    add_parameter("Compute integral values", integral_values = true);
+    add_parameter("Integral values file",
+                  integral_values_file = "integral_values.dat");
     add_parameter("Profiling", profiling = false);
   }
 

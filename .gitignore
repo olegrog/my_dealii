@@ -21,6 +21,7 @@ _*
 *.vtu
 *.ptvu
 *.pvd
+*.dat
 log*
 callgrind*
 

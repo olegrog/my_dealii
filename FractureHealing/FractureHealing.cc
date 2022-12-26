@@ -73,6 +73,7 @@ namespace FractureHealing
     void   set_boundary_ids();
     void   assemble_rhs();
     void   assemble_matrix();
+    void   find_integral_values();
     double solve_ls();
     void   output_results();
     void   make_mesh();
@@ -369,6 +370,67 @@ namespace FractureHealing
 
 
   template <int dim>
+  void Solver<dim>::find_integral_values()
+  {
+    Timer timer;
+    if (params.output.verbosity > 0)
+      std::cout << " -- Finding the integral values... " << std::flush;
+    TimerOutput::Scope t(computing_timer, "Finding the integral values");
+
+    const QGauss<dim> quadrature_formula(fe.degree + 1);
+    FEValues<dim>     fe_values(fe,
+                            quadrature_formula,
+                            update_values | update_quadrature_points |
+                              update_JxW_values);
+
+    const unsigned int n_q_points = quadrature_formula.size();
+
+    std::vector<Vector<double>> solution_values(
+      n_q_points, Vector<double>(Model::n_components));
+
+    std::vector<double> total_sums(Model::n_components);
+    double              total_volume = 0;
+
+    for (const auto &cell : dof_handler.active_cell_iterators())
+      {
+        fe_values.reinit(cell);
+        fe_values.get_function_values(solution, solution_values);
+
+        for (unsigned int q = 0; q < n_q_points; ++q)
+          {
+            for (unsigned int n = 0; n < Model::n_components; n++)
+              total_sums[n] += solution_values[q](n) * fe_values.JxW(q);
+            total_volume += fe_values.JxW(q);
+          }
+      }
+
+    static bool first_time = true;
+
+    if (first_time)
+      {
+        std::ofstream out(params.output.integral_values_file);
+        out << "# Time";
+        for (const auto &name : Model::component_names)
+          out << '\t' << name;
+        out << std::endl;
+        first_time = false;
+      }
+
+    {
+      std::ofstream out(params.output.integral_values_file, std::ios_base::app);
+      out << time();
+      for (const auto sum : total_sums)
+        out << '\t' << sum;
+      out << std::endl;
+    }
+
+    if (params.output.verbosity > 0)
+      std::cout << "done (" << timer.cpu_time() << "s)" << std::endl;
+  }
+
+
+
+  template <int dim>
   double Solver<dim>::solve_ls()
   {
     Timer timer;
@@ -604,7 +666,7 @@ namespace FractureHealing
         params.bc.set_time(time());
         set_boundary_ids();
 
-        std::cout << "Time step " << time.step() << " at t=" << time()
+        std::cout << "Time step " << time.step() << " at t = " << time()
                   << std::endl;
 
         old_rhs = rhs;
@@ -671,14 +733,17 @@ namespace FractureHealing
         if (time.output_time())
           output_results();
 
-        AssertThrow(residual < params.ns.tol,
-                    ExcMessage("Nonlinear iterations have not converge."));
+        if (params.output.integral_values)
+          find_integral_values();
 
         if (params.output.profiling)
           {
             computing_timer.print_summary();
             computing_timer.reset();
           }
+
+        AssertThrow(residual < params.ns.tol,
+                    ExcMessage("Nonlinear iterations have not converge."));
 
         if (time.adaptive())
           {
